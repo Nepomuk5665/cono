@@ -59,7 +59,6 @@ public class EventSubService {
         OAuth2Credential oAuthCredential = new OAuth2Credential("twitch", twitchOAuthDto.getToken());
         OAuth2Credential oAuthChatCredential = new OAuth2Credential("twitch", eventSubConfiguration.getChatBotOAuthToken());
         twitchClient = TwitchClientBuilder.builder().withEnableEventSocket(true).withEnableHelix(true).withEnableChat(true).withChatAccount(oAuthChatCredential).withDefaultAuthToken(oAuthCredential).build();
-        
         twitchClient.getEventSocket().register(
                 SubscriptionTypes.CHANNEL_POINTS_CUSTOM_REWARD_REDEMPTION_ADD.prepareSubscription(
                         builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId()).build(),
@@ -119,13 +118,49 @@ public class EventSubService {
         twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelChatNotificationEvent.class, event -> handleChannelNotificationMessageEvent(event));
         
         twitchClient.getEventSocket().register(
+                SubscriptionTypes.PREDICTION_BEGIN.prepareSubscription(
+                        builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId())
+                                .build(),
+                        null
+                )
+        );
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPredictionBeginEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
+
+        twitchClient.getEventSocket().register(
+                SubscriptionTypes.PREDICTION_PROGRESS.prepareSubscription(
+                        builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId())
+                                .build(),
+                        null
+                )
+        );
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPredictionProgressEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
+
+        twitchClient.getEventSocket().register(
+                SubscriptionTypes.PREDICTION_LOCK.prepareSubscription(
+                        builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId())
+                                .build(),
+                        null
+                )
+        );
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPredictionLockEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
+
+        twitchClient.getEventSocket().register(
+                SubscriptionTypes.PREDICTION_END.prepareSubscription(
+                        builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId())
+                                .build(),
+                        null
+                )
+        );
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPredictionEndEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
+
+        twitchClient.getEventSocket().register(
                 SubscriptionTypes.POLL_BEGIN.prepareSubscription(
                         builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId())
                                 .build(),
                         null
                 )
         );
-        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollBeginEvent.class, event -> eventConvertor.convert(event));
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollBeginEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
         
         twitchClient.getEventSocket().register(
                 SubscriptionTypes.POLL_PROGRESS.prepareSubscription(
@@ -134,7 +169,7 @@ public class EventSubService {
                         null
                 )
         );
-        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollProgressEvent.class, event -> eventConvertor.convert(event));
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollProgressEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
         
         twitchClient.getEventSocket().register(
                 SubscriptionTypes.POLL_END.prepareSubscription(
@@ -143,7 +178,7 @@ public class EventSubService {
                         null
                 )
         );
-        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollEndEvent.class, event -> eventConvertor.convert(event));
+        twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelPollEndEvent.class, event -> publishApplicationEvent(eventConvertor.convert(event)));
         
         twitchClient.getChat().joinChannel(eventSubConfiguration.getChannelName());
     }

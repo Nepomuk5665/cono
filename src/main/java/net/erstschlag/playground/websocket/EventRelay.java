@@ -32,6 +32,8 @@ public class EventRelay {
         classTopicLookup.put(ChannelGiftedSubscriptionsEvent.class, "/topic/twitchSubGiftsReceived");
         classTopicLookup.put(GamelogEvent.class, "/topic/gamelogReceived");
         classTopicLookup.put(ChannelViewershipEvent.class, "/topic/channelViewershipReceived");
+        classTopicLookup.put(ChannelPollEvent.class, "/topic/channelPollReceived");
+        classTopicLookup.put(ChannelPredictionEvent.class, "/topic/channelPredictionReceived");
     }
 
     @EventListener
