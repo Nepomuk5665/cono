@@ -1,8 +1,3 @@
-// ============================================================================
-// Raffle Board — Canvas2D Rework (Option B: Performance + Animation Polish)
-// ============================================================================
-
-// --- Constants ---
 const CANVAS_W = 3840;
 const CANVAS_H = 1080;
 const SHIP_SIZE = 200;
@@ -15,17 +10,11 @@ const MAX_ACTIVE_PARTICLES = 200;
 const AUDIO_POOL_SIZE = 3;
 const POD_USERNAMES = "chaos1298,onecrazymonkeh";
 
-// --- State ---
 let state = {};
 let backend;
 let gameAssets = 'assets/eve/';
-
-// --- Modules (initialized in initModules) ---
 let imageCache, particleSystem, screenShake, flashOverlay, audioPool;
 
-// ============================================================================
-// EASING FUNCTIONS
-// ============================================================================
 const Ease = {
     linear: t => t,
     easeIn: t => t * t * t,
@@ -49,9 +38,6 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function randomNumber(min, max) { return Math.round(Math.random() * (max - min) + min); }
 
-// ============================================================================
-// IMAGE CACHE
-// ============================================================================
 class ImageCache {
     constructor() {
         this.cache = new Map();
@@ -103,9 +89,6 @@ class ImageCache {
     }
 }
 
-// ============================================================================
-// PARTICLE SYSTEM
-// ============================================================================
 class ParticleSystem {
     constructor(poolSize) {
         this.pool = [];
@@ -192,9 +175,6 @@ class ParticleSystem {
     }
 }
 
-// ============================================================================
-// SCREEN SHAKE
-// ============================================================================
 class ScreenShake {
     constructor() { this.intensity = 0; this.duration = 0; this.elapsed = 0; }
     trigger(intensity, duration) {
@@ -213,9 +193,6 @@ class ScreenShake {
     }
 }
 
-// ============================================================================
-// FLASH OVERLAY
-// ============================================================================
 class FlashOverlay {
     constructor() { this.color = 'white'; this.alpha = 0; this.speed = 0; }
     trigger(color, intensity, duration) {
@@ -238,9 +215,6 @@ class FlashOverlay {
     }
 }
 
-// ============================================================================
-// AUDIO POOL
-// ============================================================================
 class AudioPool {
     constructor(src, poolSize) {
         this.clips = [];
@@ -259,9 +233,6 @@ class AudioPool {
     }
 }
 
-// ============================================================================
-// PARTICIPANT
-// ============================================================================
 const AnimPhase = {
     ENTERING: 'entering', IDLE: 'idle', SLIDING: 'sliding',
     BOMBING: 'bombing', EXPLODING: 'exploding',
@@ -283,17 +254,14 @@ class Participant {
         this.phase = AnimPhase.ENTERING;
         this.rank = 0;
 
-        // Entry animation
         this.entryTime = 0;
         this.entryDuration = 6.0;
         this.scaleDuration = 1.5;
 
-        // Idle bob
         this.bobPhase = Math.random() * Math.PI * 2;
         this.bobSpeed = 1.5 + Math.random() * 0.5;
         this.bobAmplitude = 5;
 
-        // Bomb
         this.bombX = 0;
         this.bombY = 0;
         this.bombTargetX = 0;
@@ -303,15 +271,12 @@ class Participant {
         this.bombDelay = 0;
         this.bombTrail = [];
 
-        // Winner glow
         this.winnerGlowTime = 0;
 
-        // Explosion
         this.explodeTime = 0;
         this.explodeDuration = 0.3;
         this.explosionTriggered = false;
 
-        // Threat
         this.threatProgress = 0;
         this.threatDuration = 60;
     }
@@ -342,7 +307,6 @@ class Participant {
                 break;
 
             case AnimPhase.SLIDING:
-                // Handled externally
                 break;
 
             case AnimPhase.BOMBING:
@@ -441,7 +405,6 @@ class Participant {
 
         const bombImg = cache.get(gameAssets + 'nuke.png');
 
-        // Motion trail
         if (this.bombTrail.length > 1) {
             for (let i = 0; i < this.bombTrail.length - 1; i++) {
                 const t = i / this.bombTrail.length;
@@ -457,7 +420,6 @@ class Participant {
             ctx.globalAlpha = 1;
         }
 
-        // Threat glow
         if (this.phase === AnimPhase.THREATENED) {
             const glowI = clamp(this.threatProgress, 0, 1);
             ctx.save();
@@ -483,9 +445,6 @@ class Participant {
     }
 }
 
-// ============================================================================
-// ANIMATED COUNTER
-// ============================================================================
 class AnimatedCounter {
     constructor() { this.current = 0; this.target = 0; }
     set(val) { this.target = val; }
@@ -499,9 +458,6 @@ class AnimatedCounter {
     get() { return Math.round(this.current); }
 }
 
-// ============================================================================
-// STATE MANAGEMENT
-// ============================================================================
 function resetState() {
     state = {
         isRunning: true,
@@ -525,9 +481,6 @@ function init(shipImage_, numberOfWinners_) {
     state.numberOfWinners = numberOfWinners_;
 }
 
-// ============================================================================
-// PARTICIPANT MANAGEMENT
-// ============================================================================
 function requestAddParticipant(name, userId, availableNuggets, requestedShipName) {
     if (typeof exclude === 'function' && exclude(name)) return;
     if (!state.isRunning) return;
@@ -575,23 +528,17 @@ function addParticipant(name, shipImageFile) {
     state.participants.set(name, p);
 }
 
-// ============================================================================
-// EXECUTION ANIMATION (play)
-// ============================================================================
 function play() {
     if (state.isRunning && state.winners.size === 0) {
         state.isRunning = false;
         state.phase = 'executing';
 
-        // Pre-flash warning
         flashOverlay.trigger('white', 0.15, 500);
 
-        // Select winners
         for (let i = 0; i < state.numberOfWinners; i++) {
             selectWinner();
         }
 
-        // Start slide after 1s
         setTimeout(() => {
             state.bgTargetX = 0;
 
@@ -660,9 +607,6 @@ function handleExplosion(participant) {
     notifyWinnerCommand('retractWinner', participant);
 }
 
-// ============================================================================
-// REVEAL ANIMATION
-// ============================================================================
 function revealWinner() {
     if (state.winners.size === 0) return;
     state.phase = 'revealing';
@@ -704,9 +648,6 @@ function revealWinner() {
     }, 2200);
 }
 
-// ============================================================================
-// WINNER THREAT / STOP
-// ============================================================================
 function stopWinnerThreat(winner) {
     if (!winner) return;
     state.laser = {
@@ -737,9 +678,6 @@ function completeLaserHit(winner) {
     notifyWinnerCommand('confirmWinner', winner);
 }
 
-// ============================================================================
-// REDRAW
-// ============================================================================
 function redraw() {
     if (!state.winnerRevealed) return;
 
@@ -790,15 +728,9 @@ function redraw() {
     }, 500);
 }
 
-// ============================================================================
-// PAUSE / RESUME
-// ============================================================================
 function pause() { state.paused = true; }
 function resume() { state.paused = false; }
 
-// ============================================================================
-// COMMAND DISPATCHER
-// ============================================================================
 function onCommandReceived(commandObj) {
     switch (commandObj.cmd) {
         case 'initRaffleBoard':
@@ -864,9 +796,6 @@ function send(object) {
     backend.sendObject("/app/object", object);
 }
 
-// ============================================================================
-// RENDERING
-// ============================================================================
 let canvas, ctx;
 let bgImage = null;
 let lastTime = 0;
@@ -895,33 +824,26 @@ function render() {
     ctx.save();
     ctx.translate(shake.x, shake.y);
 
-    // Background with smooth scroll
     if (bgImage) {
         state.bgOffsetX = lerp(state.bgOffsetX, state.bgTargetX, 0.05);
         ctx.drawImage(bgImage, state.bgOffsetX, 0, CANVAS_W, CANVAS_H);
     }
 
-    // Collect all drawable participants
     const allP = [
         ...Array.from(state.participants.values()),
         ...Array.from(state.winners.values())
     ].filter(p => p.alive || p.phase === AnimPhase.EXPLODING);
 
-    // Batch: ships
     for (const p of allP) p.drawShip(ctx, imageCache);
-    // Batch: text
     for (const p of allP) p.drawText(ctx);
-    // Batch: bombs
     for (const p of allP) p.drawBomb(ctx, imageCache);
 
-    // Laser
     if (state.laser && !state.laser.done) {
         const l = state.laser;
         const endX = lerp(l.fromX, l.toX, l.progress);
         const endY = lerp(l.fromY, l.toY, l.progress);
 
         ctx.save();
-        // Glow trail
         ctx.strokeStyle = 'rgba(180, 220, 255, 0.4)';
         ctx.lineWidth = 12;
         ctx.shadowColor = 'rgba(100, 180, 255, 0.8)';
@@ -931,7 +853,6 @@ function render() {
         ctx.lineTo(endX, endY);
         ctx.stroke();
 
-        // Core beam
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -940,7 +861,6 @@ function render() {
         ctx.stroke();
         ctx.restore();
 
-        // Impact flash
         if (l.progress > 0.1) {
             ctx.save();
             ctx.globalAlpha = 0.6;
@@ -954,13 +874,9 @@ function render() {
         }
     }
 
-    // Particles
     particleSystem.draw(ctx);
-
-    // Flash overlay
     flashOverlay.draw(ctx);
 
-    // Participant counter
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 6;
@@ -971,7 +887,6 @@ function render() {
     ctx.fillText(state.counter.get().toString(), 1850 - state.bgOffsetX, 55);
     ctx.restore();
 
-    // Pause overlay
     if (state.paused) {
         ctx.globalAlpha = 0.15;
         ctx.fillStyle = '#888';
@@ -982,9 +897,6 @@ function render() {
     ctx.restore();
 }
 
-// ============================================================================
-// GAME LOOP
-// ============================================================================
 function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
@@ -996,7 +908,6 @@ function gameLoop(timestamp) {
         particleSystem.update(dt);
         state.counter.update(dt);
 
-        // Update participants
         state.participants.forEach(p => {
             p.update(dt, globalTime);
             if (p.phase === AnimPhase.EXPLODING && !p.explosionTriggered) {
@@ -1005,7 +916,6 @@ function gameLoop(timestamp) {
             }
         });
 
-        // Update winners
         state.winners.forEach(w => {
             w.update(dt, globalTime);
             if (w.phase === AnimPhase.THREATENED && w.threatProgress >= 1) {
@@ -1014,7 +924,6 @@ function gameLoop(timestamp) {
             }
         });
 
-        // Update laser
         if (state.laser && !state.laser.done) {
             state.laser.progress += dt / state.laser.duration;
             if (state.laser.progress >= 1) {
@@ -1025,7 +934,6 @@ function gameLoop(timestamp) {
             }
         }
 
-        // Cleanup destroyed
         state.participants.forEach((p, key) => {
             if (p.phase === AnimPhase.DESTROYED) state.participants.delete(key);
         });
@@ -1035,18 +943,12 @@ function gameLoop(timestamp) {
     requestAnimationFrame(gameLoop);
 }
 
-// ============================================================================
-// BACKEND CONNECTION
-// ============================================================================
 function onBackendConnect(backend_) {
     backend_.subscribe('/topic/object', onCommandReceived);
     backend_.subscribe('/topic/raffleEntered', onRaffleEntered);
     backend_.subscribe('/topic/chatMessageReceived', onChatMessageReceived);
 }
 
-// ============================================================================
-// INIT
-// ============================================================================
 function initModules() {
     imageCache = new ImageCache();
     particleSystem = new ParticleSystem(PARTICLE_POOL_SIZE);
@@ -1069,7 +971,6 @@ $(() => {
     createCanvas();
     loadBackground();
 
-    // Preload common assets
     imageCache.load(gameAssets + 'nuke.png');
     imageCache.load(gameAssets + 'laser.png');
     imageCache.load(gameAssets + 'entities/Ship.png');
