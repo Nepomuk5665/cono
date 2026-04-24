@@ -4,7 +4,6 @@
         <title>Raffle board</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@latest/dist/svg.min.js"></script>
         <script src="/webjars/jquery/jquery.min.js"></script>
         <script src="/webjars/sockjs-client/sockjs.min.js"></script>
         <script src="/webjars/stomp-websocket/stomp.min.js"></script>
@@ -22,9 +21,21 @@
                 width: 100%;
                 overflow: hidden;
             }
+            #stage, #overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 3840px;
+                height: 1080px;
+            }
+            #overlay {
+                pointer-events: none;
+            }
         </style>
     </head>
     <body>
+        <canvas id="stage" width="3840" height="1080"></canvas>
+        <div id="overlay"></div>
     </body>
 
 </html>
