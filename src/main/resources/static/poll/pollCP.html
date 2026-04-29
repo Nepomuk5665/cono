@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Poll Live</title>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+
+        body {
+            background: #131313;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            font-size: 15px;
+            color: #cccccc;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #workspace {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        #sidebar {
+            width: 340px;
+            flex-shrink: 0;
+            background: #131313;
+            border-right: 1px solid #222222;
+            display: flex;
+            flex-direction: column;
+            
+            overflow: hidden;
+        }
+
+        #controls {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #2e2e2e #131313;
+            padding: 0;
+        }
+        #controls::-webkit-scrollbar { width: 4px; }
+        #controls::-webkit-scrollbar-track { background: #131313; }
+        #controls::-webkit-scrollbar-thumb { background: #2e2e2e; }
+
+        .sec {
+            border-bottom: 1px solid #1e1e1e;
+        }
+        .sec-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: background .1s;
+        }
+        .sec-head:hover { background: rgba(255,255,255,0.02); }
+        .sec-head .sec-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .sec-head .chevron {
+            margin-left: auto;
+            font-size: 11px;
+            color: #888888;
+            transition: transform .15s;
+        }
+        .sec-head.closed .chevron { transform: rotate(-90deg); }
+
+        .sec-body {
+            padding: 6px 14px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+        .sec-body.hidden { display: none; }
+
+        .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .lbl { font-size: 15px; color: #ffffff; flex: 1; }
+
+        input[type=color] {
+            width:48px; height: 28px; padding: 0;
+            border:none; outline: none; cursor: pointer;
+            background:none;
+            -webkit-appearance:none;
+            appearance: none;
+        }
+        input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type=color]::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+        .range-row { display: flex; align-items: center; gap: 7px; }
+        input[type=range] {
+            flex: 1; cursor: pointer; appearance: none; -webkit-appearance: none;
+            height: 4px; background: #333333; border-radius: 2px; outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: #cccccc; cursor: pointer;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #cccccc; cursor: pointer; border: none;
+        }
+        .rval { font-size: 14px; color: #cccccc; width: 30px; text-align: right; }
+
+        input[type=number], input[type=text] {
+            background: #1c1c1c; border: 1px solid #2a2a2a;
+            color: #ffffff; padding: 5px 8px; font: 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            width: 100%;
+        }
+        input[type=number] { width: 64px; }
+        input[type=number]:focus, input[type=text]:focus { outline: none; border-color: #888888; }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { filter: invert(1); }
+
+        input[type=checkbox] { accent-color: #888888; width: 13px; height: 13px; cursor: pointer; }
+        .chk { display: flex; align-items: center; gap: 7px; font-size: 15px; color: #ffffff; cursor: pointer; }
+
+        .btns { display: flex; gap: 5px; flex-wrap: wrap; }
+        .tog {
+            background: #1c1c1c; border: 1px solid #2a2a2a;
+            color: #666666; padding: 5px 11px;
+            font: 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; cursor: pointer; transition: all .1s;
+        }
+        .tog:hover { color: #e0e0e8; border-color: #444444; }
+        .tog.on { color: #ffffff; border-color: #555555; background: rgba(255,255,255,0.08); }
+
+        .pos-grid { display: grid; grid-template-columns: repeat(3, 26px); gap: 3px; }
+        .pos-cell { height: 17px; background: #555555; border: 1px solid #888888; cursor: pointer; transition: all .1s; }
+        .pos-cell:hover { border-color: #555555; }
+        .pos-cell.on { background: rgba(255,255,255,0.12); border-color: #888888; }
+
+        .sub { font-size: 14px; color: #ffffff; margin-bottom: 5px; }
+        .inline { display: flex; align-items: center; gap: 7px; }
+        .inline .lbl2 { font-size: 14px; color: #ffffff; white-space: nowrap; width: 44px; }
+
+        #actionbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 14px;
+            height: 46px;
+            background: #111111;
+            border-top: 1px solid #222222;
+            flex-shrink: 0;
+        }
+        .t-btn {
+            background: #1e1e1e; border: none;
+            color: #888888; padding: 6px 13px;
+            font: 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; cursor: pointer;
+            transition: background .1s, color .1s; white-space: nowrap;
+        }
+        .t-btn:hover { background: #272727; color: #cccccc; }
+        .t-btn.active { background: #2a2a2a; color: #e0e0ee; }
+        .t-btn.end    { color: #888888; }
+        .t-btn.cancel { color: #888888; }
+        #preview-area {
+            flex: 1;
+            background: #0d0d0d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        #canvas-wrap { display: block; }
+        #pollCanvas { display: block; }
+        .preview-label {
+            position: absolute;
+            bottom: 10px;
+            right: 14px;
+            font-size: 14px;
+            color: #2e2e2e;
+            letter-spacing: .5px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+        <filter id="ink-splatter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="bl"/>
+            <feColorMatrix in="bl" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -7"/>
+        </filter>
+    </defs>
+</svg>
+<div id="workspace">
+    <div id="sidebar">
+        <div id="controls">
+
+<div class="sec">
+                <div class="sec-head" data-sec="colors">
+                    <span class="sec-title">Colors</span>
+                </div>
+                <div class="sec-body" id="sec-colors">
+                    <div class="row"><span class="lbl">Accent</span>    <input type="color" id="accentColor" value="#00c8ff"></div>
+                    <div class="row"><span class="lbl">Winner</span>    <input type="color" id="winnerColor" value="#a0ffd0"></div>
+                    <div class="row"><span class="lbl">Timer</span>     <input type="color" id="timerColor"  value="#00c8ff"></div>
+                    <div class="row"><span class="lbl">Bar start</span> <input type="color" id="barColorA"   value="#062030"></div>
+                    <div class="row"><span class="lbl">Bar end</span>   <input type="color" id="barColorB"   value="#00c8ff"></div>
+                    <div class="row"><span class="lbl">Background</span><input type="color" id="bgColor"     value="#030b12"></div>
+                    <div>
+                        <div class="sub">Opacity</div>
+                        <div class="range-row">
+                            <input type="range" id="bgOpacity" min="10" max="100" value="93">
+                            <span class="rval" id="bgOpacityVal">93%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sec">
+                <div class="sec-head" data-sec="typography">
+                    <span class="sec-title">Typography</span>
+                </div>
+                <div class="sec-body" id="sec-typography">
+                    <div class="row"><span class="lbl">Font Family</span></div>
+                    <input type="text" id="fontFamily" list="fontList" placeholder="Search font...">
+                    <datalist id="fontList">
+                        <option value="Arial">
+                        <option value="Arial Narrow">
+                        <option value="Comic Sans MS">
+                        <option value="Courier New">
+                        <option value="Georgia">
+                        <option value="Impact">
+                        <option value="Segoe UI">
+                        <option value="Tahoma">
+                        <option value="Times New Roman">
+                        <option value="Trebuchet MS">
+                        <option value="Verdana">
+                    </datalist>
+                    <div>
+                        <div class="sub">Font Size</div>
+                        <div class="range-row">
+                            <input type="range" id="fontSize" min="10" max="32" value="16">
+                            <span class="rval" id="fontSizeVal">16px</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sec">
+                <div class="sec-head" data-sec="preview-bg">
+                    <span class="sec-title">Preview BG</span>
+                </div>
+                <div class="sec-body" id="sec-preview-bg">
+                    <div class="btns">
+                        <button class="tog on" data-bg="dark">Dark</button>
+                        <button class="tog" data-bg="light">Light</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sec">
+                <div class="sec-head" data-sec="position">
+                    <span class="sec-title">Position &amp; Size</span>
+                </div>
+                <div class="sec-body" id="sec-position">
+                    <div class="inline" style="gap:16px;align-items:flex-start">
+                        <div>
+                            <div class="sub">Anchor</div>
+                            <div class="pos-grid" id="posGrid">
+                                <div class="pos-cell on" data-pos="top-left"></div>
+                                <div class="pos-cell" data-pos="top-center"></div>
+                                <div class="pos-cell" data-pos="top-right"></div>
+                                <div class="pos-cell" data-pos="middle-left"></div>
+                                <div class="pos-cell" data-pos="center"></div>
+                                <div class="pos-cell" data-pos="middle-right"></div>
+                                <div class="pos-cell" data-pos="bottom-left"></div>
+                                <div class="pos-cell" data-pos="bottom-center"></div>
+                                <div class="pos-cell" data-pos="bottom-right"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:7px">
+                            <div class="inline"><span class="lbl2">X</span><input type="number" id="panelX" value="40"></div>
+                            <div class="inline"><span class="lbl2">Y</span><input type="number" id="panelY" value="40"></div>
+                            <div class="inline"><span class="lbl2">Width</span><input type="number" id="panelW" value="460"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sec">
+                <div class="sec-head" data-sec="chicken">
+                    <span class="sec-title">Chicken</span>
+                    <span class="chevron">▾</span>
+                </div>
+                <div class="sec-body" id="sec-chicken">
+                    <div class="row"><span class="lbl">Size</span>
+                        <div class="range-row" style="flex:1">
+                            <input type="range" id="chickenSize" min="160" max="600" value="340">
+                            <span class="rval" id="chickenSizeVal">340</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="sub">Exit Direction</div>
+                        <div class="btns">
+                            <button class="tog on" data-exit="right">Right</button>
+                            <button class="tog" data-exit="left">Left</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="actionbar">
+                <div class="t-btn" id="testStart">Start</div>
+                <div class="t-btn" id="testProgress">Progress</div>
+                <div class="t-btn" id="testFreeze">Freeze</div>
+                <div class="t-btn end" id="testEnd">End</div>
+                <div class="t-btn cancel" id="testCancel">Cancel</div>
+            </div>
+        </div>
+    </div>
+    <div id="preview-area">
+        <div id="canvas-wrap">
+            <canvas id="pollCanvas"></canvas>
+        </div>
+        <span class="preview-label">1920 × 1080</span>
+    </div>
+</div>
+
+<script src="/webjars/jquery/jquery.min.js"></script>
+<script src="/webjars/sockjs-client/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/stomp.min.js"></script>
+<script src="/utils/Backend.js"></script>
+<script src="pollChicken.js"></script>
+<script src="poll.js"></script>
+<script src="pollCP.js"></script>
+
+<script>
+    function scalePreview(){
+        const area = document.getElementById('preview-area');
+        const canvas = document.getElementById('pollCanvas');
+        if(!area || !canvas) return;
+        const aw = area.clientWidth, ah = area.clientHeight;
+        const scale = Math.min(aw / 1920, ah / 1080);
+        canvas.style.width  = Math.round(1920 * scale) + 'px';
+        canvas.style.height = Math.round(1080 * scale) + 'px';
+    }
+    window.addEventListener('resize', scalePreview);
+    document.addEventListener('DOMContentLoaded', scalePreview);
+</script>
+
+</body>
+</html>

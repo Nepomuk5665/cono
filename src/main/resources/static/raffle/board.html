@@ -21,9 +21,21 @@
                 width: 100%;
                 overflow: hidden;
             }
+            #stage, #overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 3840px;
+                height: 1080px;
+            }
+            #overlay {
+                pointer-events: none;
+            }
         </style>
     </head>
     <body>
+        <canvas id="stage" width="3840" height="1080"></canvas>
+        <div id="overlay"></div>
     </body>
 
 </html>
