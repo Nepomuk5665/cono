@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Poll Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+        canvas { display: block; }
+        body.bg-dark   { background: #111; }
+        body.bg-light  { background: #e8e8e8; }
+        body.bg-check  { background-image: linear-gradient(45deg,#aaa 25%,transparent 25%),
+                          linear-gradient(-45deg,#aaa 25%,transparent 25%),
+                          linear-gradient(45deg,transparent 75%,#aaa 75%),
+                          linear-gradient(-45deg,transparent 75%,#aaa 75%);
+                          background-size: 20px 20px;
+                          background-position: 0 0,0 10px,10px -10px,-10px 0;
+                          background-color: #ccc; }
+    </style>
+</head>
+<body>
+    <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+        <defs>
+            <filter id="ink-splatter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="bl"/>
+                <feColorMatrix in="bl" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -7"/>
+            </filter>
+        </defs>
+    </svg>
+    <canvas id="pollCanvas"></canvas>
+    <script>
+        (function(){
+            const bgMap=['','bg-dark','bg-light','bg-check'];
+            function apply(){
+                const idx=parseInt(localStorage.getItem('pollBgIdx')||'1');
+                document.body.className=bgMap[idx]||'';
+            }
+            apply();
+            window.addEventListener('storage',function(e){ if(e.key==='pollBgIdx') apply(); });
+        })();
+    </script>
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/utils/Backend.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="pollChicken.js"></script>
+    <script src="poll.js"></script>
+</body>
+</html>
