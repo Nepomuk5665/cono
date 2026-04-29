@@ -123,19 +123,20 @@ public class EventConvertor {
     }
 
     public ChannelPollEvent convert(com.github.twitch4j.eventsub.events.ChannelPollBeginEvent cPBE) {
-        return convert(ChannelPollEvent.TYPE.START, cPBE, cPBE.getEndsAt());
+        return convert(ChannelPollEvent.TYPE.START, cPBE, cPBE.getEndsAt(), null);
     }
 
     public ChannelPollEvent convert(com.github.twitch4j.eventsub.events.ChannelPollProgressEvent cPPE) {
-        return convert(ChannelPollEvent.TYPE.PROGRESS, cPPE, cPPE.getEndsAt());
+        return convert(ChannelPollEvent.TYPE.PROGRESS, cPPE, cPPE.getEndsAt(), null);
     }
 
     public ChannelPollEvent convert(com.github.twitch4j.eventsub.events.ChannelPollEndEvent cPEE) {
-        return convert(ChannelPollEvent.TYPE.END, cPEE, cPEE.getEndedAt());
+        String status = cPEE.getStatus() != null ? cPEE.getStatus().toString().toLowerCase() : null;
+        return convert(ChannelPollEvent.TYPE.END, cPEE, cPEE.getEndedAt(), status);
     }
 
     private ChannelPollEvent convert(ChannelPollEvent.TYPE eventType,
-            com.github.twitch4j.eventsub.events.ChannelPollEvent cPE, Instant endsAt) {
+            com.github.twitch4j.eventsub.events.ChannelPollEvent cPE, Instant endsAt, String status) {
         List<ChannelPollEvent.PollChoice> pollChoices = new ArrayList<>();
         int additionalVoteChannelPointCost = 0;
         if (cPE.getChannelPointsVoting().isEnabled()) {
@@ -154,7 +155,8 @@ public class EventConvertor {
                 pollChoices,
                 cPE.getStartedAt(),
                 endsAt,
-                additionalVoteChannelPointCost);
+                additionalVoteChannelPointCost,
+                status);
     }
 
     private Optional<UserDto> extractUser(com.github.twitch4j.eventsub.events.EventSubUserChannelEvent eSUCE) {

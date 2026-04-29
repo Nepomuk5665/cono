@@ -123,3 +123,6 @@ src/main/resources/static/raffle/assets/albion/entities/Capsule.png
 src/main/resources/static/raffle/board.js
 src/main/resources/static/ticker/script.js
 C:/Stream/Runtime/playground/pg.mv.db
+C:/Stream/Runtime/playground/pg.trace.db
+C:/Stream/Runtime/playground/pg_dev.mv.db
+C:/Stream/Runtime/playground/pg_dev.trace.db

@@ -23,9 +23,11 @@ public class ChannelPollEvent extends PlaygroundEvent<ChannelPollEvent> {
     private final Instant startedAt;
     private final Instant endsAt;
     private final int additionalVoteChannelPointCost;
+    private final String status;
 
     public ChannelPollEvent(TYPE eventType, String id, String title,
-            List<PollChoice> pollChoices, Instant startedAt, Instant endsAt, int additionalVoteChannelPointCost) {
+            List<PollChoice> pollChoices, Instant startedAt, Instant endsAt,
+            int additionalVoteChannelPointCost, String status) {
         super(Optional.empty());
         this.eventType = eventType;
         this.id = id;
@@ -34,6 +36,7 @@ public class ChannelPollEvent extends PlaygroundEvent<ChannelPollEvent> {
         this.startedAt = startedAt;
         this.endsAt = endsAt;
         this.additionalVoteChannelPointCost = additionalVoteChannelPointCost;
+        this.status = status;
     }
 
     public TYPE getEventType() {
@@ -64,11 +67,15 @@ public class ChannelPollEvent extends PlaygroundEvent<ChannelPollEvent> {
         return additionalVoteChannelPointCost;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
     @Override
     public String toString() {
         return "ChannelPollEvent [eventType=" + eventType + ", id=" + id + ", title=" + title + ", pollChoices="
                 + pollChoices + ", startedAt=" + startedAt + ", endsAt=" + endsAt + ", additionalVoteChannelPointCost="
-                + additionalVoteChannelPointCost + "]";
+                + additionalVoteChannelPointCost + ", status=" + status + "]";
     }
 
 }
