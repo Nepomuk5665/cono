@@ -12,7 +12,7 @@ const MOCK_POLL = {
     status:'active',
 };
 
-let selectedPos='top-left', selectedMode='bar';
+let selectedPos='top-left';
 let selectedFontFamily='"Segoe UI",system-ui,Arial,sans-serif', selectedFontSize=16;
 let debounceTimer=null;
 
@@ -29,7 +29,6 @@ function buildConfig(){
         panelPosition:   selectedPos,
         panelX:          parseInt($('#panelX').val()),
         panelY:          parseInt($('#panelY').val()),
-        displayMode:     selectedMode,
         fontFamily:      $('#fontFamily').val().trim()||selectedFontFamily,
         fontSize:        selectedFontSize,
     };
@@ -43,7 +42,7 @@ function saveState(){
         barColorA:$('#barColorA').val(), barColorB:$('#barColorB').val(),
         bgColor:$('#bgColor').val(), bgOpacity:$('#bgOpacity').val(),
         panelW:$('#panelW').val(), panelX:$('#panelX').val(), panelY:$('#panelY').val(),
-        selectedPos, selectedMode, selectedFontFamily, selectedFontSize,
+        selectedPos, selectedFontFamily, selectedFontSize,
     }));
 }
 
@@ -87,7 +86,6 @@ $(() => {
     $('#fontSize').on('input', ()=>{ selectedFontSize=parseInt($('#fontSize').val()); $('#fontSizeVal').text(selectedFontSize+'px'); autoSend(); });
     $('#fontFamily').on('input', ()=>{ selectedFontFamily=$('#fontFamily').val().trim()||'"Segoe UI",system-ui,Arial,sans-serif'; autoSend(); });
     $('input[type=color]').on('input', autoSend);
-    $('input[type=checkbox]').on('change', autoSend);
     $('input[type=number]').on('input', ()=>autoSendDebounced(300));
 
     $('#posGrid .pos-cell').click(function(){
@@ -140,5 +138,5 @@ $(() => {
     sendTestEvent('START',[124,56,20]);
     setActiveBtn('testStart');
 
-    backend=new Backend(()=>{ $('#conn-dot').addClass('on').attr('title','Connected'); });
+    backend=new Backend();
 });

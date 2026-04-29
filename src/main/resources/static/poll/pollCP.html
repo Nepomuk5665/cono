@@ -54,32 +54,18 @@
             align-items: center;
             gap: 8px;
             padding: 10px 14px;
-            cursor: pointer;
-            user-select: none;
-            transition: background .1s;
         }
-        .sec-head:hover { background: rgba(255,255,255,0.02); }
         .sec-head .sec-title {
             font-size: 15px;
             font-weight: 600;
             color: #ffffff;
         }
-        .sec-head .chevron {
-            margin-left: auto;
-            font-size: 11px;
-            color: #888888;
-            transition: transform .15s;
-        }
-        .sec-head.closed .chevron { transform: rotate(-90deg); }
-
-        .sec-body {
+.sec-body {
             padding: 6px 14px 14px;
             display: flex;
             flex-direction: column;
             gap: 9px;
         }
-        .sec-body.hidden { display: none; }
-
         .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .lbl { font-size: 15px; color: #ffffff; flex: 1; }
 
@@ -118,9 +104,6 @@
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { filter: invert(1); }
 
-        input[type=checkbox] { accent-color: #888888; width: 13px; height: 13px; cursor: pointer; }
-        .chk { display: flex; align-items: center; gap: 7px; font-size: 15px; color: #ffffff; cursor: pointer; }
-
         .btns { display: flex; gap: 5px; flex-wrap: wrap; }
         .tog {
             background: #1c1c1c; border: 1px solid #2a2a2a;
@@ -157,8 +140,6 @@
         }
         .t-btn:hover { background: #272727; color: #cccccc; }
         .t-btn.active { background: #2a2a2a; color: #e0e0ee; }
-        .t-btn.end    { color: #888888; }
-        .t-btn.cancel { color: #888888; }
         #preview-area {
             flex: 1;
             background: #0d0d0d;
@@ -168,7 +149,6 @@
             position: relative;
             overflow: hidden;
         }
-        #canvas-wrap { display: block; }
         #pollCanvas { display: block; }
         .preview-label {
             position: absolute;
@@ -280,7 +260,6 @@
             <div class="sec">
                 <div class="sec-head" data-sec="chicken">
                     <span class="sec-title">Chicken</span>
-                    <span class="chevron">▾</span>
                 </div>
                 <div class="sec-body" id="sec-chicken">
                     <div class="row"><span class="lbl">Size</span>
@@ -309,9 +288,7 @@
         </div>
     </div>
     <div id="preview-area">
-        <div id="canvas-wrap">
-            <canvas id="pollCanvas"></canvas>
-        </div>
+        <canvas id="pollCanvas"></canvas>
         <span class="preview-label">1920 × 1080</span>
     </div>
 </div>
