@@ -5,9 +5,9 @@
 
     const S = { HIDDEN:0, ENTERING:1, HOLDING:2, FROZEN:3, THAWING:4, CELEBRATING:5, EXITING:6 };
     let state = S.HIDDEN, stateStart = 0;
-    let freezeAmt = 0, hadPollEnd = false, celebStyle = 0;
+    let freezeAmt = 0, celebStyle = 0;
 
-    let renderer, scene, camera, chickenGroup, shadowMesh, keyLight, rimLight, freezeLight;
+    let renderer, scene, camera, chickenGroup, shadowMesh, keyLight, freezeLight;
     let modelReady = false;
     let mats = {};
 
@@ -19,8 +19,6 @@
 
         renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true });
         renderer.setSize(1920, 1080, false);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.setClearColor(0x000000, 0);
 
         scene = new THREE.Scene();
@@ -31,10 +29,9 @@
 
         keyLight = new THREE.DirectionalLight(0xffe4b0, 2.2);
         keyLight.position.set(-300, 500, 600);
-        keyLight.castShadow = true;
         scene.add(keyLight);
 
-        rimLight = new THREE.DirectionalLight(0x7ab0ff, 0.5);
+        const rimLight = new THREE.DirectionalLight(0x7ab0ff, 0.5);
         rimLight.position.set(400, 200, -400);
         scene.add(rimLight);
 
@@ -78,10 +75,8 @@
             box.getCenter(center);
             gltf.scene.position.set(-center.x*scale, -center.y*scale, -center.z*scale);
 
-            mats.body  = makeMat('#E07520');
-            mats.belly = makeMat('#F0A030');
-            mats.leg   = makeMat('#F0C030');
-            mats.dark  = makeMat('#C04010');
+            mats.body = makeMat('#E07520');
+            mats.leg  = makeMat('#F0C030');
 
             gltf.scene.traverse(function(child){
                 if(!child.isMesh) return;
@@ -197,9 +192,7 @@
             freezeLight.position.set(sx, 1080 - sy, 400);
         } else {
             mats.body.color.setHex(0xE07520);
-            mats.belly.color.setHex(0xF0A030);
             mats.leg.color.setHex(0xF0C030);
-            mats.dark.color.setHex(0xC04010);
             keyLight.color.setRGB(1.0, 0.9, 0.7);
             keyLight.intensity = 2.2;
             freezeLight.intensity = 0;
@@ -209,9 +202,9 @@
     }
 
     function onPollEvent(event){
-        if(event.eventType === 'START')    { hadPollEnd=false; go(S.ENTERING); }
+        if(event.eventType === 'START')         go(S.ENTERING);
         else if(event.eventType === 'PROGRESS'){ if(state===S.FROZEN) go(S.THAWING); }
-        else if(event.eventType === 'END') { hadPollEnd=true; go(S.CELEBRATING); }
+        else if(event.eventType === 'END')      go(S.CELEBRATING);
     }
 
     function onCommand(cmd){

@@ -1,15 +1,14 @@
 let cfg = {
     panelPosition:'top-left', panelX:40, panelY:40, panelW:480,
-    accentColor:'#e8a030', winnerColor:'#ffe88a', timerColor:'#e8a030', barColorA:'#c06010', barColorB:'#f0c040', bgColor:'#080604', bgOpacity:0.82,
-    showFooter:true, resultMs:9000,
+    accentColor:'#e8a030', winnerColor:'#ffe88a', barColorA:'#c06010', barColorB:'#f0c040', bgColor:'#080604', bgOpacity:0.82,
+    showFooter:true,
     fontFamily:'"Segoe UI",system-ui,Arial,sans-serif',
     fontSize:16,
     cornerRadius:10,
     frameImageUrl:'', framePad:20, frameOnly:false,
     leaderGlow:true,
-    scorePop:true, celebrationEnabled:true,
+    scorePop:true,
     displayMode:'bar',
-    overlayStyle:'default',
 };
 
 function fz(n){ return Math.round(n * (cfg.fontSize||16) / 16); }
@@ -81,7 +80,7 @@ function panelGeometry(){
 function drawFrameImage(geo){
     if(!frameImg) return;
     const {x,y,W,H}=geo;
-    const p=cfg.framePad||20;
+    const p=cfg.framePad;
     ctx.drawImage(frameImg,x-p,y-p,W+p*2,H+p*2);
 }
 
@@ -334,13 +333,6 @@ function drawPanelDefault(alpha,ts){
 
 
 
-
-
-
-function drawPanel(alpha,ts){
-    drawPanelDefault(alpha,ts);
-}
-
 function render(ts){
     requestAnimationFrame(render);
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -348,11 +340,12 @@ function render(ts){
 
     scanOff=(ts/4)%(cfg.panelW+80);
 
+    const geo=panelGeometry();
+
     choices.forEach((c,i)=>{
         const prev=prevVotes[i]||0;
         c.animVotes+=(c.votes-c.animVotes)*.06;
         if(cfg.scorePop&&c.votes>prev&&phase==='active'){
-            const geo=panelGeometry();
             const popY=geo.y+geo.HDR_H+i*geo.ROW_H+geo.ROW_H-geo.BAR_H-10;
             if(scorePopPool.length<20)
                 scorePopPool.push({x:geo.x+geo.W-geo.PAD,y:popY,delta:c.votes-prev,life:1,color:cfg.accentColor});
@@ -373,7 +366,6 @@ function render(ts){
         if(alpha<=0){phase='hidden';poll=null;choices=[];return;}
     }
 
-    const geo=panelGeometry();
     updateScorePops();
 
     if(cfg.frameImageUrl&&cfg.frameImageUrl!==frameImgLoaded){
@@ -385,7 +377,7 @@ function render(ts){
     }
     if(!cfg.frameImageUrl){frameImg=null;frameImgLoaded='';}
 
-    drawPanel(alpha, ts);
+    drawPanelDefault(alpha, ts);
     drawFrameImage(geo);
     drawScorePops();
 }

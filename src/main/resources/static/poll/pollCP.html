@@ -183,14 +183,6 @@
 </head>
 <body>
 
-<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-    <defs>
-        <filter id="ink-splatter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="bl"/>
-            <feColorMatrix in="bl" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -7"/>
-        </filter>
-    </defs>
-</svg>
 <div id="workspace">
     <div id="sidebar">
         <div id="controls">
@@ -202,7 +194,6 @@
                 <div class="sec-body" id="sec-colors">
                     <div class="row"><span class="lbl">Accent</span>    <input type="color" id="accentColor" value="#00c8ff"></div>
                     <div class="row"><span class="lbl">Winner</span>    <input type="color" id="winnerColor" value="#a0ffd0"></div>
-                    <div class="row"><span class="lbl">Timer</span>     <input type="color" id="timerColor"  value="#00c8ff"></div>
                     <div class="row"><span class="lbl">Bar start</span> <input type="color" id="barColorA"   value="#062030"></div>
                     <div class="row"><span class="lbl">Bar end</span>   <input type="color" id="barColorB"   value="#00c8ff"></div>
                     <div class="row"><span class="lbl">Background</span><input type="color" id="bgColor"     value="#030b12"></div>
@@ -329,7 +320,6 @@
 <script src="/webjars/sockjs-client/sockjs.min.js"></script>
 <script src="/webjars/stomp-websocket/stomp.min.js"></script>
 <script src="/utils/Backend.js"></script>
-<script src="pollChicken.js"></script>
 <script src="poll.js"></script>
 <script src="pollCP.js"></script>
 

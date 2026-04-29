@@ -13,8 +13,7 @@ const MOCK_POLL = {
 };
 
 let selectedPos='top-left', selectedMode='bar';
-let selectedCornerRadius=10, selectedFontFamily='"Segoe UI",system-ui,Arial,sans-serif', selectedFontSize=16;
-let selectedOverlayStyle='default';
+let selectedFontFamily='"Segoe UI",system-ui,Arial,sans-serif', selectedFontSize=16;
 let debounceTimer=null;
 
 function buildConfig(){
@@ -22,7 +21,6 @@ function buildConfig(){
         cmd:             'pollConfig',
         accentColor:     $('#accentColor').val(),
         winnerColor:     $('#winnerColor').val(),
-        timerColor:      $('#timerColor').val(),
         barColorA:       $('#barColorA').val(),
         barColorB:       $('#barColorB').val(),
         bgColor:         $('#bgColor').val(),
@@ -32,10 +30,8 @@ function buildConfig(){
         panelX:          parseInt($('#panelX').val()),
         panelY:          parseInt($('#panelY').val()),
         displayMode:     selectedMode,
-        cornerRadius:    selectedCornerRadius,
         fontFamily:      $('#fontFamily').val().trim()||selectedFontFamily,
         fontSize:        selectedFontSize,
-        overlayStyle:    selectedOverlayStyle,
     };
 }
 
@@ -44,11 +40,10 @@ const _SAVE_KEY='pollCP_v1';
 function saveState(){
     localStorage.setItem(_SAVE_KEY, JSON.stringify({
         accentColor:$('#accentColor').val(), winnerColor:$('#winnerColor').val(),
-        timerColor:$('#timerColor').val(), barColorA:$('#barColorA').val(),
-        barColorB:$('#barColorB').val(), bgColor:$('#bgColor').val(),
-        bgOpacity:$('#bgOpacity').val(),
+        barColorA:$('#barColorA').val(), barColorB:$('#barColorB').val(),
+        bgColor:$('#bgColor').val(), bgOpacity:$('#bgOpacity').val(),
         panelW:$('#panelW').val(), panelX:$('#panelX').val(), panelY:$('#panelY').val(),
-        selectedPos, selectedMode, selectedCornerRadius, selectedFontFamily, selectedFontSize, selectedOverlayStyle,
+        selectedPos, selectedMode, selectedFontFamily, selectedFontSize,
     }));
 }
 
@@ -58,7 +53,6 @@ function restoreState(){
         const d=JSON.parse(raw);
         if(d.accentColor) $('#accentColor').val(d.accentColor);
         if(d.winnerColor) $('#winnerColor').val(d.winnerColor);
-        if(d.timerColor)  $('#timerColor').val(d.timerColor);
         if(d.barColorA)   $('#barColorA').val(d.barColorA);
         if(d.barColorB)   $('#barColorB').val(d.barColorB);
         if(d.bgColor)     $('#bgColor').val(d.bgColor);
@@ -67,11 +61,8 @@ function restoreState(){
         if(d.panelX!==undefined) $('#panelX').val(d.panelX);
         if(d.panelY!==undefined) $('#panelY').val(d.panelY);
         if(d.selectedPos){ selectedPos=d.selectedPos; $('#posGrid .pos-cell').removeClass('on'); $(`[data-pos="${d.selectedPos}"]`).addClass('on'); }
-        if(d.selectedMode){ selectedMode=d.selectedMode; $('[data-mode]').removeClass('on'); $(`[data-mode="${d.selectedMode}"]`).addClass('on'); }
-        if(d.selectedCornerRadius!==undefined) selectedCornerRadius=d.selectedCornerRadius;
         if(d.selectedFontFamily){ selectedFontFamily=d.selectedFontFamily; $('#fontFamily').val(d.selectedFontFamily); }
         if(d.selectedFontSize!==undefined){ selectedFontSize=d.selectedFontSize; $('#fontSize').val(d.selectedFontSize); $('#fontSizeVal').text(d.selectedFontSize+'px'); }
-        if(d.selectedOverlayStyle!==undefined) selectedOverlayStyle=d.selectedOverlayStyle;
     }catch(e){}
 }
 
@@ -119,22 +110,18 @@ $(() => {
     $('#chickenSize').on('input',function(){
         const v=parseInt($(this).val());
         $('#chickenSizeVal').text(v);
-        if(typeof chickenCfg!=='undefined') chickenCfg.size=v;
-    });
-    $('[data-dance]').click(function(){
-        $('[data-dance]').removeClass('on'); $(this).addClass('on');
-        if(typeof chickenCfg!=='undefined') chickenCfg.danceType=$(this).data('dance');
+        send({cmd:'chickenCfg', size:v});
     });
     $('[data-exit]').click(function(){
         $('[data-exit]').removeClass('on'); $(this).addClass('on');
-        if(typeof chickenCfg!=='undefined') chickenCfg.exitDir=$(this).data('exit');
+        send({cmd:'chickenCfg', exitDir:$(this).data('exit')});
     });
 
     function setActiveBtn(id){ $('.t-btn').removeClass('active'); $('#'+id).addClass('active'); }
 
     $('#testStart').click(()=>{ autoSend(); sendTestEvent('START',[0,0,0]); setActiveBtn('testStart'); });
-    $('#testFreeze').click(()=>{ if(typeof ChickenAnim!=='undefined') ChickenAnim.onPollPause(); setActiveBtn('testFreeze'); });
-    $('#testProgress').click(()=>{ autoSend(); sendTestEvent('PROGRESS',[124,56,20]); if(typeof ChickenAnim!=='undefined') ChickenAnim.onPollResume(); setActiveBtn('testProgress'); });
+    $('#testFreeze').click(()=>{ send({cmd:'pollPause'}); setActiveBtn('testFreeze'); });
+    $('#testProgress').click(()=>{ autoSend(); sendTestEvent('PROGRESS',[124,56,20]); setActiveBtn('testProgress'); });
     $('#testEnd').click(()=>{
         autoSend();
         const ev=JSON.parse(JSON.stringify(MOCK_POLL));
