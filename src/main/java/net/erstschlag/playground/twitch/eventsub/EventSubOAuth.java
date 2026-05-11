@@ -26,7 +26,7 @@ public class EventSubOAuth {
                 + "client_secret=" + eventSubConfiguration.getClientSecret() + "&"
                 + "code=" + code + "&"
                 + "grant_type=authorization_code" + "&"
-                + "redirect_uri=http://localhost:8081/oAuth3.html");
+                + "redirect_uri=http://localhost:8081/oAuth2.html");
     }
 
     public TwitchOAuthDto refresh(TwitchOAuthDto twitchOAuthDto) throws IOException, InterruptedException {
