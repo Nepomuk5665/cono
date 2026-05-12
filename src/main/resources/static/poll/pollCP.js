@@ -331,7 +331,7 @@ $(function(){
     $('#panelDelay').on('input', function(){
         const v = parseInt($(this).val());
         document.getElementById('panelDelayVal').textContent = (v/1000).toFixed(1)+'s';
-        if (typeof cfg !== 'undefined') cfg.panelDelay = v;
+        cfg.panelDelay = v;
     });
     $('#maxOpts').on('input', function(){
         const v = parseInt($(this).val());
@@ -384,6 +384,5 @@ $(function(){
 
     autoSend();
 
-    backend = new Backend(function(){
-    });
+    backend = new Backend();
 });
