@@ -34,7 +34,6 @@
         var el = document.createElement('div');
         el.className = 'pp-panel';
         el.innerHTML = (
-            '<div class="pp-inner-bg"></div>' +
             '<div class="pp-scan-reveal"></div>' +
             '<div class="pp-timer-area">' +
                 '<div class="pp-timer"></div>' +
@@ -288,7 +287,7 @@
     function setup(){
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'pollPanel.css';
+        link.href = 'pollPanel.css?v=2';
         document.head.appendChild(link);
         if(!buildDOM()) return;
         panel.style.setProperty('--pp-hud',    C.hudColor);

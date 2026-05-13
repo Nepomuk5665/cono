@@ -3,9 +3,9 @@
 
     window.chickenCfg = {
         exitDir: 'right',
-        size: 220,
+        size: 160,
         entryDir: 'top-left',
-        rotation: 180,
+        rotation: -90,
         celebrationSequence: [4, 7, 3],
         celebrationMode: 'sequence',
         exitSequence: [6, 1],
@@ -154,11 +154,14 @@
         const rot = (window.chickenCfg.rotation || 0) * Math.PI / 180;
 
         if(state === S.APPEARING){
-            const a = Math.min(1, el / 500);
-            setAlpha(a);
-            model.position.set(rx, ry, 0);
-            model.rotation.y = rot;
-            if(a >= 1) go(S.GREETING);
+            const ed = window.chickenCfg.entryDir || 'left';
+            const fromRight = ed === 'right' || ed === 'top-right';
+            const start = fromRight ? offR() : offL();
+            const t = Math.min(el / 1200, 1);
+            const ease = t * t * (3 - 2 * t);
+            model.position.set(start.x + (rx - start.x) * ease, ry, 0);
+            model.rotation.y = fromRight ? Math.PI : 0;
+            if(t >= 1) go(S.GREETING);
 
         } else if(state === S.GREETING || state === S.LOOKING_UP){
             model.position.set(rx, ry, 0);
@@ -212,8 +215,12 @@
         if(!loaded) return;
 
         if(s === S.APPEARING){
-            setAlpha(0);
-            model.position.set(restX(), restY() + modelBotOff, 0);
+            setAlpha(1);
+            const ed = window.chickenCfg.entryDir || 'left';
+            const fromRight = ed === 'right' || ed === 'top-right';
+            const start = fromRight ? offR() : offL();
+            model.position.set(start.x, restY() + modelBotOff, 0);
+            model.rotation.y = fromRight ? Math.PI : 0;
             playAnim(AI.walk);
 
         } else if(s === S.GREETING){
@@ -232,7 +239,7 @@
             playAnim(AI.walk);
 
         } else if(s === S.ACTIVE){
-            playAnim(AI.walk);
+            playAnim(AI.dance1);
 
         } else if(s === S.FROZEN){
             freezePhase = false;
