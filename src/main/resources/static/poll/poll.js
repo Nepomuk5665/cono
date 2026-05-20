@@ -48,11 +48,21 @@ function onCommandReceived(cmd){
     } else if(cmd.cmd==='pollResume'){
         if(window.ChickenAnim) window.ChickenAnim.onPollResume();
         if(window.PollPanel)   window.PollPanel.onPollResume();
+    } else if(cmd.cmd==='pollShow'){
+        if(window.ChickenAnim) window.ChickenAnim.onPollStart();
+    } else if(cmd.cmd==='pollReveal'){
+        if(window.ChickenAnim) window.ChickenAnim.onPollEnd();
+        if(window.PollPanel)   window.PollPanel.onPollEnd({ title:'', choices:[], isEnd:true, isCancelled:false, winnerIdx:-1, endsAt:null });
+    } else if(cmd.cmd==='pollHide'){
+        if(window.ChickenAnim) window.ChickenAnim.onPollCancel();
+        if(window.PollPanel)   window.PollPanel.hide();
     } else if(cmd.cmd==='chickenCfg'){
         if(cmd.size!==undefined     && window.chickenCfg) window.chickenCfg.size=cmd.size;
         if(cmd.exitDir              && window.chickenCfg) window.chickenCfg.exitDir=cmd.exitDir;
         if(cmd.entryDir             && window.chickenCfg) window.chickenCfg.entryDir=cmd.entryDir;
-        if(cmd.rotation!==undefined && window.chickenCfg) window.chickenCfg.rotation=cmd.rotation;
+        if(cmd.rotation!==undefined            && window.chickenCfg) window.chickenCfg.rotation=cmd.rotation;
+        if(cmd.rotationX!==undefined           && window.chickenCfg) window.chickenCfg.rotationX=cmd.rotationX;
+        if(cmd.celebrationSequence !== undefined && window.chickenCfg) window.chickenCfg.celebrationSequence=cmd.celebrationSequence;
     }
 }
 
@@ -60,5 +70,3 @@ function onBackendConnect(b){
     b.subscribe('/topic/channelPollReceived', applyPollEvent);
     b.subscribe('/topic/object', onCommandReceived);
 }
-
-$(()=>{ new Backend(onBackendConnect); });

@@ -5,10 +5,11 @@
         exitDir: 'right',
         size: 160,
         entryDir: 'top-left',
-        rotation: -90,
-        celebrationSequence: [4, 7, 3],
+        rotation: -94,
+        rotationX: 35,
+        celebrationSequence: [3],
         celebrationMode: 'sequence',
-        exitSequence: [6, 1],
+        exitSequence: [0],
         introEnabled: true,
         resultRevealDuration: 2800,
     };
@@ -34,6 +35,7 @@
     let freezeAmt = 0, freezePhase = false, freezeIv = null;
     let seqTimer = null;
     let modelMats = null;
+    let rootBone = null;
 
     const FOV = 50, ZD = 5;
     const visH = 2 * Math.tan((FOV * Math.PI / 180) / 2) * ZD;
@@ -97,6 +99,7 @@
                         modelMats.push(m);
                     });
                 }
+                if(o.isBone && (!o.parent || !o.parent.isBone)) rootBone = o;
             });
 
             loaded = true;
@@ -106,6 +109,8 @@
         (function loop(){
             requestAnimationFrame(loop);
             if(mixer) mixer.update(clock.getDelta());
+            if(model){ model.children.forEach(function(c){ c.position.x = 0; c.position.z = 0; }); }
+            if(rootBone){ rootBone.position.x = 0; rootBone.position.z = 0; }
             tick();
             updateLights();
             renderer.render(scene, camera);
@@ -151,36 +156,40 @@
         const sc = window.chickenCfg.size / 340;
         model.scale.setScalar(baseScale * sc);
         const rx = restX(), ry = restY() + modelBotOff;
-        const rot = (window.chickenCfg.rotation || 0) * Math.PI / 180;
+        const rot  = (window.chickenCfg.rotation  || 0) * Math.PI / 180;
+        const rotX = (window.chickenCfg.rotationX || 0) * Math.PI / 180;
 
         if(state === S.APPEARING){
             const ed = window.chickenCfg.entryDir || 'left';
             const fromRight = ed === 'right' || ed === 'top-right';
             const start = fromRight ? offR() : offL();
-            const t = Math.min(el / 1200, 1);
-            const ease = t * t * (3 - 2 * t);
+            const walkDur = dur(AI.walk) * 3 || 3500;
+            const t = Math.min(el / walkDur, 1);
+            const ease = t;
             model.position.set(start.x + (rx - start.x) * ease, ry, 0);
             model.rotation.y = fromRight ? Math.PI : 0;
             if(t >= 1) go(S.GREETING);
 
-        } else if(state === S.GREETING || state === S.LOOKING_UP){
+        } else if(state === S.GREETING){
             model.position.set(rx, ry, 0);
-            model.rotation.y = rot;
+            const turnT = Math.min(el / 500, 1);
+            model.rotation.y = rot * turnT;
+            model.rotation.x = rotX * turnT;
 
         } else if(state === S.PANEL_REVEAL){
             model.position.set(rx, ry, 0);
-            model.rotation.y = rot;
+            model.rotation.y = rot; model.rotation.x = rotX;
             if(el >= 1000) go(S.ACTIVE);
 
         } else if(state === S.ACTIVE || state === S.FROZEN || state === S.THAWING || state === S.RESOLVED || state === S.CELEBRATING){
             model.position.set(rx, ry, 0);
-            model.rotation.y = rot;
+            model.rotation.y = rot; model.rotation.x = rotX;
 
         } else if(state === S.EXITING){
-            const t = Math.min(el / 1400, 1);
+            const t = Math.min(el / 9000, 1);
             const dir = window.chickenCfg.exitDir === 'right' ? 1 : -1;
             const tgt = dir > 0 ? offR() : offL();
-            model.position.set(rx + (tgt.x - rx) * (t * t), ry, 0);
+            model.position.set(rx + (tgt.x - rx) * t, ry, 0);
             model.rotation.y = dir > 0 ? 0 : Math.PI;
             if(t >= 1){
                 state = S.HIDDEN;
@@ -221,22 +230,18 @@
             const start = fromRight ? offR() : offL();
             model.position.set(start.x, restY() + modelBotOff, 0);
             model.rotation.y = fromRight ? Math.PI : 0;
-            playAnim(AI.walk);
+            playAnim(AI.walk, false);
 
         } else if(s === S.GREETING){
             if(window.chickenCfg.introEnabled !== false){
                 playAnim(AI.wave, false);
-                seqTimer = setTimeout(function(){ go(S.LOOKING_UP); }, Math.min(dur(AI.wave) - 200, 1800));
+                seqTimer = setTimeout(function(){ go(S.PANEL_REVEAL); }, Math.min(dur(AI.wave) - 200, 1800));
             } else {
                 go(S.PANEL_REVEAL);
             }
 
-        } else if(s === S.LOOKING_UP){
-            playAnim(AI.lookUp, false);
-            seqTimer = setTimeout(function(){ go(S.PANEL_REVEAL); }, Math.min(dur(AI.lookUp) - 200, 1000));
-
         } else if(s === S.PANEL_REVEAL){
-            playAnim(AI.walk);
+            playAnim(AI.dance1);
 
         } else if(s === S.ACTIVE){
             playAnim(AI.dance1);
@@ -244,19 +249,12 @@
         } else if(s === S.FROZEN){
             freezePhase = false;
             playAnim(AI.freeze1);
-            freezeIv = setInterval(function(){
-                if(state !== S.FROZEN){ clearInterval(freezeIv); return; }
-                freezePhase = !freezePhase;
-                playAnim(freezePhase ? AI.freeze2 : AI.freeze1);
-            }, 4000);
 
         } else if(s === S.THAWING){
             playAnim(AI.walk);
 
         } else if(s === S.RESOLVED){
-            playAnim(AI.walk);
-            const revDur = (window.chickenCfg.resultRevealDuration || 2800) + 600;
-            seqTimer = setTimeout(function(){ go(S.CELEBRATING); }, revDur);
+            playSeq([AI.bow], false, function(){ go(S.EXITING); });
 
         } else if(s === S.CELEBRATING){
             if(cancelMode){
@@ -284,7 +282,7 @@
         onPollPause:    function(){ if(state !== S.HIDDEN && state !== S.FROZEN) go(S.FROZEN); },
         onPollResume:   function(){ if(state === S.FROZEN) go(S.THAWING); },
         onPollEnd:      function(){ cancelMode = false; go(S.RESOLVED); },
-        onPollCancel:   function(){ cancelMode = true; go(S.CELEBRATING); },
+        onPollCancel:   function(){ go(S.EXITING); },
         setCfg: function(px, py, pw){
             panelX = px !== undefined ? px : 40;
             panelY = py !== undefined ? py : 40;

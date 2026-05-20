@@ -287,7 +287,7 @@
     function setup(){
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'pollPanel.css?v=2';
+        link.href = 'pollPanel.css?v=6';
         document.head.appendChild(link);
         if(!buildDOM()) return;
         panel.style.setProperty('--pp-hud',    C.hudColor);

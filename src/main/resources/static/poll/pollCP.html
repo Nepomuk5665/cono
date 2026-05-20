@@ -25,63 +25,25 @@
         #controls::-webkit-scrollbar-track { background: #131313; }
         #controls::-webkit-scrollbar-thumb { background: #2e2e2e; }
         #actionPanel {
-            flex-shrink: 0; padding: 10px 12px 8px; background: #1a1a1a;
+            flex-shrink: 0; padding: 10px 12px 10px; background: #1a1a1a;
             border-bottom: 1px solid #2a2a2a;
         }
-        #actionPanel .ap-title {
-            font: 11px Arial, sans-serif; color: #aaa; letter-spacing: .05em;
-            text-transform: uppercase; margin-bottom: 8px;
-        }
-        .ap-step {
-            display: flex; align-items: center; gap: 9px; width: 100%;
-            background: transparent; border: 1px solid #333;
-            color: #ccc; padding: 6px 10px; margin-bottom: 3px;
-            font: 13px Arial, sans-serif;
-            cursor: pointer; text-align: left;
-            transition: background .1s, border-color .1s, color .1s;
-        }
-        .ap-step:hover { background: #252525; color: #fff; border-color: #444; }
-        .ap-step .step-num {
-            width: 18px; height: 18px; border-radius: 50%; border: 1px solid #555;
-            font: 9px Arial, sans-serif; color: #aaa;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; transition: all .15s;
-        }
-        .ap-step .step-label { flex: 1; font-weight: 500; }
-        .ap-step.next { border-color: #00d4ff55; color: #00d4ff; background: rgba(0,212,255,.04); }
-        .ap-step.next .step-num { border-color: #00d4ff77; color: #00d4ff; }
-        .ap-step.active { border-color: #00d4ff; color: #fff; background: rgba(0,212,255,.09); }
-        .ap-step.active .step-num { background: #00d4ff; border-color: #00d4ff; color: #000; font-weight: 700; }
-        .ap-step.done { opacity: .3; border-color: #1c1c1c; pointer-events: none; }
-        .ap-step.done .step-num { background: #1c1c1c; border-color: #1c1c1c; color: #444; }
-        .ap-step.ap-winner.next { border-color: #f5c84266; color: #f5c842; background: rgba(245,200,66,.04); }
-        .ap-step.ap-winner.next .step-num { border-color: #f5c84288; color: #f5c842; }
-        .ap-step.ap-winner.active { border-color: #f5c842; color: #fff; background: rgba(245,200,66,.09); }
-        .ap-step.ap-winner.active .step-num { background: #f5c842; border-color: #f5c842; color: #000; }
-        .ap-hr { border: none; border-top: 1px solid #1e1e1e; margin: 7px 0 6px; }
-        .ap-danger-row { display: flex; gap: 5px; }
-        .ap-danger-btn {
-            flex: 1; background: transparent; border: 1px solid #333;
-            color: #ccc; padding: 5px 8px;
-            font: 12px Arial, sans-serif;
-            cursor: pointer; text-align: center;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            transition: all .1s;
-        }
-        .ap-danger-btn:hover { color: #ff6644; border-color: #ff442244; background: rgba(180,40,0,.07); }
-        .ap-emergency { border-color: #333; color: #ccc; }
-        .ap-emergency:hover { color: #ff4422; border-color: #ff442244; background: rgba(200,30,0,.12); }
+        .ap-main-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        .ap-main-row .tog { flex: 1; }
+        .ap-timer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 3px; }
+        #pollTimer { font: 700 22px monospace; color: #444; letter-spacing: .06em; }
+        #pollTimer.running { color: #00c864; }
+        #pollTimer.urgent  { color: #ff4422; animation: blink .5s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
         .sec { border-bottom: 1px solid #1c1c1c; }
         .sec.sec-first { border-top: none; }
-        .sec.sec-first .sec-head .sec-title { color: #ddeeff; }
         .sec-head {
             display: flex; align-items: center; gap: 8px;
             padding: 9px 14px; cursor: pointer; user-select: none;
         }
         .sec-head::after { content: '▾'; margin-left: auto; color: #333; font-size: 10px; transition: transform .15s; }
         .sec-head.collapsed::after { transform: rotate(-90deg); }
-        .sec-head .sec-title { font-size: 13px; font-weight: 600; color: #999; }
-        .sec.sec-first .sec-head::after { color: #00d4ff44; }
+        .sec-head .sec-title { font-size: 13px; font-weight: 600; color: #fff; }
         .sec-body { padding: 4px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
         .sec-body.collapsed { display: none; }
         .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -162,206 +124,46 @@
 <div id="workspace">
 <div id="sidebar">
     <div id="actionPanel">
-        <div class="ap-title">Poll Workflow</div>
-        <button class="ap-step" id="apStart">
-            <span class="step-num">1</span>
-            <span class="step-label">Start Poll</span>
-        </button>
-        <button class="ap-step" id="apProgress">
-            <span class="step-num">2</span>
-            <span class="step-label">Update Votes</span>
-        </button>
-        <button class="ap-step" id="apFreeze">
-            <span class="step-num">3</span>
-            <span class="step-label">Freeze Poll</span>
-        </button>
-        <button class="ap-step" id="apUnfreeze">
-            <span class="step-num">4</span>
-            <span class="step-label">Unfreeze</span>
-        </button>
-        <button class="ap-step ap-winner" id="apReveal">
-            <span class="step-num">5</span>
-            <span class="step-label">Reveal Winner</span>
-        </button>
-        <hr class="ap-hr">
-        <button class="ap-step" id="apTest" style="border-color:#44aa6655;color:#6c6;margin-bottom:6px">
-            <span class="step-num" style="border-color:#44aa6655;color:#6c6">T</span>
-            <span class="step-label">Test Poll (Dev)</span>
-        </button>
-        <hr class="ap-hr">
-        <div class="ap-danger-row">
-            <button class="ap-danger-btn" id="apCancel">
-                Cancel Poll 
-            </button>
-            <button class="ap-danger-btn ap-emergency" id="apHide">
-                Hide Now 
-            </button>
+        <div class="ap-main-row">
+            <button class="tog" id="apStart">Start</button>
+        </div>
+        <div class="ap-main-row">
+            <button class="tog" id="apPause">Pause</button>
+            <button class="tog" id="apEnd">End</button>
+        </div>
+        <div class="ap-timer-row">
+            <span id="pollTimer">--:--</span>
         </div>
     </div>
+    <!-- hidden inputs so drag handles + buildConfig still work -->
+    <input type="number" id="panelX" value="40" style="display:none">
+    <input type="number" id="panelY" value="40" style="display:none">
+    <input type="number" id="panelW" value="460" style="display:none">
     <div id="controls">
-        <div class="sec sec-first" data-sec-id="position" data-default-collapsed>
-            <div class="sec-head" data-sec="position">
-                <span class="sec-title">Position &amp; Size</span>
-                
-            </div>
-            <div class="sec-body" id="sec-position">
-                <div class="inline" style="gap:14px;align-items:flex-start">
-                    <div>
-                        <div class="sub">Anchor</div>
-                        <div class="pos-grid" id="posGrid">
-                            <div class="pos-cell on" data-pos="top-left"></div>
-                            <div class="pos-cell" data-pos="top-center"></div>
-                            <div class="pos-cell" data-pos="top-right"></div>
-                            <div class="pos-cell" data-pos="middle-left"></div>
-                            <div class="pos-cell" data-pos="center"></div>
-                            <div class="pos-cell" data-pos="middle-right"></div>
-                            <div class="pos-cell" data-pos="bottom-left"></div>
-                            <div class="pos-cell" data-pos="bottom-center"></div>
-                            <div class="pos-cell" data-pos="bottom-right"></div>
-                        </div>
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:6px">
-                        <div class="inline"><span class="lbl2">X</span><input type="number" id="panelX" value="40"></div>
-                        <div class="inline"><span class="lbl2">Y</span><input type="number" id="panelY" value="40"></div>
-                        <div class="inline"><span class="lbl2">Width</span><input type="number" id="panelW" value="460"></div>
-                    </div>
-                </div>
-                <div class="btns">
-                    <button class="tog" id="resetPos">Reset Pos</button>
-                    <button class="tog" id="resetSize">Reset Size</button>
-                </div>
-            </div>
-        </div>
-        <div class="sec" data-sec-id="chicken" data-default-collapsed>
+        <div class="sec" data-sec-id="chicken">
             <div class="sec-head" data-sec="chicken">
                 <span class="sec-title">Chicken</span>
-                
             </div>
             <div class="sec-body" id="sec-chicken">
-                <div class="row"><span class="lbl">Size</span>
-                    <div class="range-row" style="flex:1">
-                        <input type="range" id="chickenSize" min="100" max="600" value="220">
-                        <span class="rval" id="chickenSizeVal">220</span>
+                <div class="row">
+                    <span class="lbl">Visibility</span>
+                    <div class="btns">
+                        <button class="tog on" id="chickenShow">Show</button>
+                        <button class="tog" id="chickenHide">Hide</button>
                     </div>
                 </div>
+
                 <div class="row"><span class="lbl">Rotation</span>
                     <div class="range-row" style="flex:1">
-                        <input type="range" id="chickenRot" min="-180" max="180" value="-27">
-                        <span class="rval" id="chickenRotVal">-27°</span>
+                        <input type="range" id="chickenRot" min="-180" max="180" value="-94">
+                        <span class="rval" id="chickenRotVal">-94°</span>
                     </div>
                 </div>
-                <div class="inline" style="gap:12px">
-                    <div>
-                        <div class="sub">Exit</div>
-                        <div class="btns">
-                            <button class="tog on" data-exit="right">Right</button>
-                            <button class="tog" data-exit="left">Left</button>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="sub">Entry</div>
-                        <div class="btns">
-                            <button class="tog on" data-entry="top-left">TL</button>
-                            <button class="tog" data-entry="top-right">TR</button>
-                            <button class="tog" data-entry="left">L</button>
-                            <button class="tog" data-entry="right">R</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="btns"><button class="tog" id="resetChicken">Reset Defaults</button></div>
-            </div>
-        </div>
-        <div class="sec" data-sec-id="panel" data-default-collapsed>
-            <div class="sec-head" data-sec="panel">
-                <span class="sec-title">Panel</span>
-                
-            </div>
-            <div class="sec-body" id="sec-panel">
-                <div class="row"><span class="lbl">Appear delay</span>
+                <div class="row"><span class="lbl">Vertical Rotation</span>
                     <div class="range-row" style="flex:1">
-                        <input type="range" id="panelDelay" min="0" max="6000" step="100" value="2500">
-                        <span class="rval" id="panelDelayVal" style="width:36px">2.5s</span>
+                        <input type="range" id="chickenRotX" min="-180" max="180" value="35">
+                        <span class="rval" id="chickenRotXVal">35°</span>
                     </div>
-                </div>
-                <div class="row"><span class="lbl">Max options shown</span>
-                    <div class="range-row" style="flex:1">
-                        <input type="range" id="maxOpts" min="2" max="8" step="1" value="5">
-                        <span class="rval" id="maxOptsVal">5</span>
-                    </div>
-                </div>
-                <div class="row"><span class="lbl">Bar speed</span>
-                    <div class="range-row" style="flex:1">
-                        <input type="range" id="barEasing" min="1" max="20" step="1" value="6">
-                        <span class="rval" id="barEasingVal" style="width:36px">0.06</span>
-                    </div>
-                </div>
-                <div class="row"><span class="lbl">Result reveal (ms)</span>
-                    <input type="number" id="resultRevealMs" value="2800" style="width:70px">
-                </div>
-                <div class="row"><span class="lbl">Linger (ms)</span>
-                    <input type="number" id="lingerMs" value="7000" style="width:70px">
-                </div>
-            </div>
-        </div>
-        <div class="sec" data-sec-id="celebration" data-default-collapsed>
-            <div class="sec-head" data-sec="celebration">
-                <span class="sec-title">Celebration</span>
-                
-            </div>
-            <div class="sec-body" id="sec-celebration">
-                <div class="btns">
-                    <button class="tog on" data-celmode="sequence">Sequence</button>
-                    <button class="tog" data-celmode="random">Random</button>
-                </div>
-                <div class="seq-wrap" id="celebSeq"></div>
-                <div class="btns">
-                    <select id="celebAddSel" style="font-size:12px">
-                        <option value="0">0 walk</option><option value="1">1 salto</option>
-                        <option value="2">2 lookUp</option><option value="3">3 bow</option>
-                        <option value="4" selected>4 dance1</option><option value="5">5 wave</option>
-                        <option value="6">6 walkUp</option><option value="7">7 dance2</option>
-                        <option value="9">9 freeze1</option><option value="10">10 freeze2</option>
-                    </select>
-                    <button class="tog" id="celebAddBtn">+ Add</button>
-                    <button class="tog" id="celebPreview">Preview</button>
-                </div>
-            </div>
-        </div>
-        <div class="sec" data-sec-id="exitcfg" data-default-collapsed>
-            <div class="sec-head" data-sec="exitcfg">
-                <span class="sec-title">Exit Config</span>
-                
-            </div>
-            <div class="sec-body" id="sec-exitcfg">
-                <div class="seq-wrap" id="exitSeq"></div>
-                <div class="btns">
-                    <select id="exitAddSel" style="font-size:12px">
-                        <option value="0">0 walk</option><option value="1">1 salto</option>
-                        <option value="2">2 lookUp</option><option value="3">3 bow</option>
-                        <option value="4">4 dance1</option><option value="5">5 wave</option>
-                        <option value="6" selected>6 walkUp</option><option value="7">7 dance2</option>
-                        <option value="9">9 freeze1</option><option value="10">10 freeze2</option>
-                    </select>
-                    <button class="tog" id="exitAddBtn">+ Add</button>
-                </div>
-            </div>
-        </div>
-        <div class="sec" data-sec-id="presets" data-default-collapsed>
-            <div class="sec-head" data-sec="presets">
-                <span class="sec-title">Presets</span>
-                
-            </div>
-            <div class="sec-body" id="sec-presets">
-                <div class="preset-grid" id="presetSlots"></div>
-                <div class="inline">
-                    <input type="text" id="presetNameInput" placeholder="Preset name…" style="font-size:12px">
-                    <button class="tog" id="presetSaveBtn">Save</button>
-                    <button class="tog" id="presetExport">Export</button>
-                </div>
-                <textarea id="presetJsonArea" rows="3" style="display:none;width:100%;background:#0d0d0d;border:1px solid #2a2a2a;color:#888;font:10px Arial,sans-serif;padding:5px;resize:vertical"></textarea>
-                <div class="btns" style="margin-top:3px">
-                    <button class="tog" id="safetyStopAnims">Stop Animations</button>
-                    <button class="tog danger" id="resetAllBtn">Reset All Settings</button>
                 </div>
             </div>
         </div>
@@ -386,10 +188,10 @@
 <script src="/webjars/sockjs-client/sockjs.min.js"></script>
 <script src="/webjars/stomp-websocket/stomp.min.js"></script>
 <script src="/utils/Backend.js"></script>
-<script src="poll.js?v=16"></script>
-<script src="pollChicken.js?v=16"></script>
-<script src="pollPanel.js?v=20"></script>
-<script src="pollCP.js?v=16"></script>
+<script src="poll.js?v=22"></script>
+<script src="pollChicken.js?v=39"></script>
+<script src="pollPanel.js?v=22"></script>
+<script src="pollCP.js?v=22"></script>
 <script>
     function scalePreview(){
         const area   = document.getElementById('preview-area');
