@@ -2,7 +2,7 @@
 
 .pp-panel{position:absolute;box-sizing:border-box;display:none;overflow:hidden;background:transparent;}
 
-.pp-frame{position:absolute;inset:0;background-image:url("PanelFrame.png?v=4");background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;z-index:50;mix-blend-mode:screen;}
+.pp-frame{position:absolute;inset:0;background-image:url("PanelFrame.png?v=5");background-size:100% 100%;background-repeat:no-repeat;pointer-events:none;z-index:50;}
 
 .pp-scan-reveal{position:absolute;left:0;right:0;bottom:0;height:2px;z-index:40;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(180,80,20,.05),rgba(180,80,20,.8),rgba(180,80,20,.05));box-shadow:0 0 10px rgba(160,60,10,.7);}
 
