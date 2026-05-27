@@ -2,38 +2,36 @@
     'use strict';
 
     window.chickenCfg = {
-        exitDir: 'right',
-        size: 160,
+        size: 130,
         entryDir: 'top-left',
         rotation: -94,
         rotationX: 35,
-        celebrationSequence: [3],
+        celebrationSequence: [4],
         celebrationMode: 'sequence',
-        exitSequence: [0],
         introEnabled: true,
-        resultRevealDuration: 2800,
     };
 
     const AI = {
         walk:0, salto:1, lookUp:2, bow:3,
         dance1:4, wave:5, walkUp:6, dance2:7,
-        freeze1:9, freeze2:10
+        freeze1:9,
     };
 
     const S = {
-        HIDDEN:0, APPEARING:1, GREETING:2, LOOKING_UP:3,
+        HIDDEN:0, APPEARING:1, GREETING:2,
         PANEL_REVEAL:4, ACTIVE:5, FROZEN:6, THAWING:7,
-        RESOLVED:8, CELEBRATING:9, EXITING:10
+        CELEBRATING:9, EXITING:10
     };
 
-    let state = S.HIDDEN, stateTs = 0, cancelMode = false;
+    let state = S.HIDDEN, stateTs = 0, cancelMode = false, exitWithBow = false, exitCb = null;
     let renderer, scene, camera, mixer, model, clock;
     let ambientLight, blueLight, goldLight;
     let actions = [], currentAction = null, loaded = false;
     let baseScale = 1, modelBotOff = 0;
     let panelX = 40, panelW = 460, panelY = 40;
-    let freezeAmt = 0, freezePhase = false, freezeIv = null;
+    let freezeAmt = 0;
     let seqTimer = null;
+    let onEnteredCb = null;
     let modelMats = null;
     let rootBone = null;
 
@@ -43,8 +41,8 @@
 
     function sx(px){ return (px - 960) * WPP; }
     function sy(py){ return -(py - 540) * WPP; }
-    function restX(){ return sx(panelX + panelW + 80); }
-    function restY(){ return sy(panelY + window.chickenCfg.size * 1.05); }
+    function restX(){ return sx(panelX + panelW + 55); }
+    function restY(){ var panelH = panelW * (1024 / 1536); return sy(panelY + panelH * 0.87); }
     function offL(){ return { x: sx(-300), y: restY() }; }
     function offR(){ return { x: sx(2200), y: restY() }; }
 
@@ -56,7 +54,9 @@
         const cvs = renderer.domElement;
         cvs.id = 'chickenCanvas';
         cvs.style.display = 'block';
-        (document.getElementById('chickenContainer') || document.body).appendChild(cvs);
+        const container = document.getElementById('chickenContainer') || document.body;
+        if(container !== document.body) container.style.zIndex = '10';
+        container.appendChild(cvs);
         if(typeof window.scalePreview === 'function') window.scalePreview();
 
         scene = new THREE.Scene();
@@ -89,6 +89,14 @@
             scene.add(model);
 
             mixer = new THREE.AnimationMixer(model);
+            gltf.animations.forEach(function(clip){
+                clip.tracks = clip.tracks.filter(function(track){
+                    var isPos = track.name.indexOf('.position') !== -1;
+                    var name = track.name.split('.')[0].toLowerCase();
+                    var isRoot = name === 'root' || name === 'hips' || name === 'pelvis' || name === 'armature';
+                    return !(isPos && isRoot);
+                });
+            });
             actions = gltf.animations.map(function(c){ return mixer.clipAction(c); });
 
             modelMats = [];
@@ -168,7 +176,7 @@
             const ease = t;
             model.position.set(start.x + (rx - start.x) * ease, ry, 0);
             model.rotation.y = fromRight ? Math.PI : 0;
-            if(t >= 1) go(S.GREETING);
+            if(t >= 1) go(S.ACTIVE);
 
         } else if(state === S.GREETING){
             model.position.set(rx, ry, 0);
@@ -181,21 +189,23 @@
             model.rotation.y = rot; model.rotation.x = rotX;
             if(el >= 1000) go(S.ACTIVE);
 
-        } else if(state === S.ACTIVE || state === S.FROZEN || state === S.THAWING || state === S.RESOLVED || state === S.CELEBRATING){
+        } else if(state === S.ACTIVE || state === S.FROZEN || state === S.THAWING || state === S.CELEBRATING){
             model.position.set(rx, ry, 0);
             model.rotation.y = rot; model.rotation.x = rotX;
 
         } else if(state === S.EXITING){
-            const t = Math.min(el / 9000, 1);
-            const dir = window.chickenCfg.exitDir === 'right' ? 1 : -1;
-            const tgt = dir > 0 ? offR() : offL();
-            model.position.set(rx + (tgt.x - rx) * t, ry, 0);
-            model.rotation.y = dir > 0 ? 0 : Math.PI;
-            if(t >= 1){
-                state = S.HIDDEN;
-                model.position.x = -100;
-                if(currentAction){ currentAction.stop(); currentAction = null; }
-                setAlpha(1);
+            const bowDur = exitWithBow ? dur(AI.bow) : 0;
+            if(el >= bowDur){
+                if(exitCb){ var f = exitCb; exitCb = null; f(); }
+                const t = Math.min(1, (el - bowDur) / 700);
+                setAlpha(1 - t);
+                if(t >= 1){
+                    state = S.HIDDEN;
+                    model.position.x = -100;
+                    if(currentAction){ currentAction.stop(); currentAction = null; }
+                    setAlpha(1);
+                    exitWithBow = false;
+                }
             }
         }
     }
@@ -212,7 +222,7 @@
         }
         ambientLight.color.setRGB(1 - 0.4 * freezeAmt, 1 - 0.2 * freezeAmt, 1);
         blueLight.intensity = 3 * freezeAmt;
-        const celebrating = (state === S.RESOLVED || state === S.CELEBRATING) && !cancelMode;
+        const celebrating = state === S.CELEBRATING && !cancelMode;
         goldLight.intensity += ((celebrating ? 2.5 : 0) - goldLight.intensity) * 0.04;
     }
 
@@ -220,7 +230,6 @@
         state = s;
         stateTs = performance.now();
         clearTimeout(seqTimer);
-        clearInterval(freezeIv);
         if(!loaded) return;
 
         if(s === S.APPEARING){
@@ -230,7 +239,13 @@
             const start = fromRight ? offR() : offL();
             model.position.set(start.x, restY() + modelBotOff, 0);
             model.rotation.y = fromRight ? Math.PI : 0;
-            playAnim(AI.walk, false);
+            if(mixer && actions[AI.walk]){
+                if(currentAction) currentAction.fadeOut(0.1);
+                currentAction = actions[AI.walk];
+                currentAction.setLoop(THREE.LoopRepeat, 3);
+                currentAction.clampWhenFinished = true;
+                currentAction.reset().fadeIn(0.1).play();
+            }
 
         } else if(s === S.GREETING){
             if(window.chickenCfg.introEnabled !== false){
@@ -241,20 +256,17 @@
             }
 
         } else if(s === S.PANEL_REVEAL){
-            playAnim(AI.dance1);
+            playAnim(AI.lookUp);
 
         } else if(s === S.ACTIVE){
-            playAnim(AI.dance1);
+            playAnim(AI.lookUp);
+            if(onEnteredCb){ var cb = onEnteredCb; onEnteredCb = null; cb(); }
 
         } else if(s === S.FROZEN){
-            freezePhase = false;
             playAnim(AI.freeze1);
 
         } else if(s === S.THAWING){
             playAnim(AI.walk);
-
-        } else if(s === S.RESOLVED){
-            playSeq([AI.bow], false, function(){ go(S.EXITING); });
 
         } else if(s === S.CELEBRATING){
             if(cancelMode){
@@ -268,27 +280,41 @@
                 } else {
                     seq = cfg.celebrationSequence || [AI.dance1, AI.dance2, AI.bow];
                 }
-                playSeq(seq, false, function(){ go(S.EXITING); });
+                playSeq(seq, false, function(){ go(S.ACTIVE); });
             }
 
         } else if(s === S.EXITING){
-            const exitSeq = cancelMode ? [AI.walk] : (window.chickenCfg.exitSequence || [AI.walkUp, AI.salto]);
-            playSeq(exitSeq, true, null);
+            if(exitWithBow){
+                playSeq([AI.bow], false);
+            } else {
+                if(currentAction) currentAction.fadeOut(0.2);
+                currentAction = null;
+            }
         }
     }
 
     window.ChickenAnim = {
-        onPollStart:    function(){ cancelMode = false; go(S.APPEARING); },
+        onPollStart:    function(cb){ cancelMode = false; onEnteredCb = cb || null; go(S.APPEARING); },
         onPollPause:    function(){ if(state !== S.HIDDEN && state !== S.FROZEN) go(S.FROZEN); },
         onPollResume:   function(){ if(state === S.FROZEN) go(S.THAWING); },
-        onPollEnd:      function(){ cancelMode = false; go(S.RESOLVED); },
-        onPollCancel:   function(){ go(S.EXITING); },
+        onPollEnd:      function(){ if(state === S.CELEBRATING || state === S.EXITING || state === S.HIDDEN) return; cancelMode = false; go(S.CELEBRATING); },
+        onPollCancel:   function(){ exitWithBow = false; go(S.EXITING); },
         setCfg: function(px, py, pw){
             panelX = px !== undefined ? px : 40;
             panelY = py !== undefined ? py : 40;
             panelW = pw !== undefined ? pw : 460;
         },
+        onPanelDisappear: function(cb){
+            if(state === S.HIDDEN || state === S.EXITING){ if(cb) cb(); return; }
+            exitWithBow = true;
+            exitCb = cb || null;
+            go(S.EXITING);
+        },
         previewAnim: function(idx){ if(actions[idx]) playAnim(idx); },
+        setVisible: function(v){
+            var cvs = document.getElementById('chickenCanvas');
+            if(cvs) cvs.style.display = v ? 'block' : 'none';
+        },
     };
 
     if(document.readyState === 'loading'){

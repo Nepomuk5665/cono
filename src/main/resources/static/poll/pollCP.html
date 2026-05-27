@@ -75,6 +75,8 @@
         }
         .tog:hover { color: #ddd; border-color: #444; }
         .tog.on { color: #fff; border-color: #555; background: rgba(255,255,255,.07); }
+        #actionPanel #chickenVisible.chk-on  { color: #fff; background: rgba(255,255,255,.14); border-color: #555; }
+        #actionPanel #chickenVisible.chk-off { color: #555; }
         .tog.danger { color: #553322; border-color: #332211; }
         .tog.danger:hover { color: #ff6622; border-color: #553311; background: rgba(150,40,0,.12); }
         .pos-grid { display: grid; grid-template-columns: repeat(3, 26px); gap: 3px; }
@@ -131,11 +133,16 @@
             <button class="tog" id="apPause">Pause</button>
             <button class="tog" id="apEnd">End</button>
         </div>
+        <div class="ap-main-row">
+            <button class="tog" id="apSimulate" style="flex:1">Simulate Votes</button>
+        </div>
+        <div class="ap-main-row">
+            <button class="tog on" id="chickenVisible" style="flex:1">Chicken On</button>
+        </div>
         <div class="ap-timer-row">
             <span id="pollTimer">--:--</span>
         </div>
     </div>
-    <!-- hidden inputs so drag handles + buildConfig still work -->
     <input type="number" id="panelX" value="40" style="display:none">
     <input type="number" id="panelY" value="40" style="display:none">
     <input type="number" id="panelW" value="460" style="display:none">
@@ -145,14 +152,6 @@
                 <span class="sec-title">Chicken</span>
             </div>
             <div class="sec-body" id="sec-chicken">
-                <div class="row">
-                    <span class="lbl">Visibility</span>
-                    <div class="btns">
-                        <button class="tog on" id="chickenShow">Show</button>
-                        <button class="tog" id="chickenHide">Hide</button>
-                    </div>
-                </div>
-
                 <div class="row"><span class="lbl">Rotation</span>
                     <div class="range-row" style="flex:1">
                         <input type="range" id="chickenRot" min="-180" max="180" value="-94">
@@ -188,10 +187,10 @@
 <script src="/webjars/sockjs-client/sockjs.min.js"></script>
 <script src="/webjars/stomp-websocket/stomp.min.js"></script>
 <script src="/utils/Backend.js"></script>
-<script src="poll.js?v=22"></script>
-<script src="pollChicken.js?v=39"></script>
-<script src="pollPanel.js?v=22"></script>
-<script src="pollCP.js?v=22"></script>
+<script src="poll.js"></script>
+<script src="pollChicken.js"></script>
+<script src="pollPanel.js"></script>
+<script src="pollCP.js"></script>
 <script>
     function scalePreview(){
         const area   = document.getElementById('preview-area');

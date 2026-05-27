@@ -3,10 +3,14 @@ let selectedPos = 'top-left';
 let debounceTimer = null;
 let _previewScale = 1;
 let _pollEndsAt = null;
+let _pausedAt = null;
 let _timerInterval = null;
+let _simInterval = null;
+let _simVotes = [];
 
-const _SAVE_KEY = 'pollCP_v7';
-const _SEC_KEY  = 'pollCP_sections';
+const _SAVE_KEY      = 'pollCP_v8';
+const _SEC_KEY       = 'pollCP_sections';
+const _POLL_STATE_KEY = 'pollCP_activeState';
 
 
 window._updateDragHandles = function(scale) {
@@ -51,6 +55,7 @@ function saveState(){
     localStorage.setItem(_SAVE_KEY, JSON.stringify({
         panelW: $('#panelW').val(), panelX: $('#panelX').val(), panelY: $('#panelY').val(),
         chickenRot: $('#chickenRot').val(),
+        chickenVisible: $('#chickenVisible').hasClass('on'),
     }));
 }
 
@@ -62,7 +67,14 @@ function restoreState(){
         if (d.panelW) $('#panelW').val(d.panelW);
         if (d.panelX) $('#panelX').val(d.panelX);
         if (d.chickenRot) { $('#chickenRot').val(d.chickenRot); $('#chickenRotVal').text(d.chickenRot+'°'); }
+        if (d.chickenVisible === false) { setChickenBtn(false); }
     } catch(e){}
+}
+
+function setChickenBtn(on){
+    var btn = $('#chickenVisible');
+    btn.toggleClass('on', on).toggleClass('chk-on', on).toggleClass('chk-off', !on);
+    btn.text(on ? 'Chicken' : 'Chicken Off');
 }
 
 function send(obj){
@@ -77,6 +89,7 @@ function autoSend(){
         rotationX: parseInt($('#chickenRotX').val()) || 0,
         entryDir: 'top-left',
     });
+    send({ cmd: 'chickenVisible', visible: $('#chickenVisible').hasClass('on') });
     if (window._updateDragHandles) window._updateDragHandles(_previewScale);
 }
 function autoSendDebounced(ms){ clearTimeout(debounceTimer); debounceTimer = setTimeout(autoSend, ms || 350); }
@@ -85,6 +98,32 @@ function autoSendDebounced(ms){ clearTimeout(debounceTimer); debounceTimer = set
 function doEmergencyHide(){
     if (window.ChickenAnim) window.ChickenAnim.onPollCancel();
     if (window.PollPanel)   window.PollPanel.hide();
+}
+
+function savePollState(event, endsAt){
+    try { localStorage.setItem(_POLL_STATE_KEY, JSON.stringify({ event: event, endsAt: new Date(endsAt).toISOString() })); } catch(e){}
+}
+
+function clearPollState(){
+    localStorage.removeItem(_POLL_STATE_KEY);
+}
+
+function tryRestorePoll(){
+    var raw = localStorage.getItem(_POLL_STATE_KEY);
+    if(!raw) return;
+    var saved;
+    try { saved = JSON.parse(raw); } catch(e){ clearPollState(); return; }
+    var remaining = new Date(saved.endsAt) - Date.now();
+    if(remaining <= 1000){ clearPollState(); return; }
+    var ev = Object.assign({}, saved.event, {
+        _restore: true,
+        startedAt: new Date().toISOString(),
+        endsAt: new Date(Date.now() + remaining).toISOString(),
+    });
+    _pollEndsAt = Date.now() + remaining;
+    window.onPollVisible = function(e){ window.onPollVisible = null; startTimer(e); };
+    $('#apStart').addClass('on'); $('#apPause').removeClass('on'); $('#apEnd').removeClass('on');
+    if(typeof applyPollEvent === 'function') applyPollEvent(ev);
 }
 
 function startTimer(endsAt) {
@@ -98,7 +137,13 @@ function startTimer(endsAt) {
         var s = left % 60;
         el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
         el.className = left === 0 ? '' : (left <= 15 ? 'urgent' : 'running');
-        if (left === 0) { clearInterval(_timerInterval); }
+        if (left === 0) {
+            clearInterval(_timerInterval);
+            clearInterval(_simInterval); _simInterval = null;
+            $('#apSimulate').removeClass('on');
+            $('#apEnd').addClass('on'); $('#apStart').removeClass('on'); $('#apPause').removeClass('on');
+            send({ cmd: 'pollReveal' });
+        }
     }, 500);
 }
 
@@ -169,17 +214,88 @@ $(function(){
     initCollapsible();
     initKeyboardShortcuts();
 
-    $('#apStart').click(function(){ autoSend(); send({ cmd: 'pollShow' }); });
-    $('#apPause').click(function(){ send({ cmd: 'pollPause' }); });
-    $('#apEnd').click(function(){ stopTimer(); send({ cmd: 'pollReveal' }); });
-
-    $('#chickenShow').click(function(){
-        $('#chickenShow').addClass('on'); $('#chickenHide').removeClass('on');
-        send({ cmd: 'pollShow' });
+    $('#apStart').click(function(){
+        $('#apStart').addClass('on'); $('#apPause').removeClass('on'); $('#apEnd').removeClass('on');
+        autoSend();
+        const now = Date.now();
+        const endsAt = now + 120000;
+        _pollEndsAt = endsAt;
+        window.onPollVisible = function(e){ window.onPollVisible = null; startTimer(e); };
+        var startEvent = {
+            id: 'dev-test', eventType: 'START', status: 'active',
+            title: 'Welches ist das absolut beste Spiel das du je in deinem ganzen Leben gespielt hast und warum?',
+            startedAt: new Date(now).toISOString(),
+            endsAt: new Date(endsAt).toISOString(),
+            pollChoices: [
+                { title: 'The Legend of Zelda: Breath of the Wild', totalVotes: 120, channelPointVotes: 0 },
+                { title: 'Elden Ring – Shadow of the Erdtree Edition', totalVotes:  55, channelPointVotes: 0 },
+                { title: 'Red Dead Redemption 2', totalVotes:  30, channelPointVotes: 0 },
+            ],
+        };
+        savePollState(startEvent, endsAt);
+        send({ cmd: 'pollTest', event: startEvent });
     });
-    $('#chickenHide').click(function(){
-        $('#chickenHide').addClass('on'); $('#chickenShow').removeClass('on');
-        send({ cmd: 'pollHide' });
+    $('#apPause').click(function(){
+        if ($('#apPause').hasClass('on')) {
+            if(_pausedAt !== null){ _pollEndsAt += Date.now() - _pausedAt; _pausedAt = null; }
+            startTimer(_pollEndsAt);
+            $('#apPause').removeClass('on'); $('#apStart').addClass('on');
+            send({ cmd: 'pollResume' });
+        } else {
+            _pausedAt = Date.now();
+            clearInterval(_timerInterval);
+            $('#apPause').addClass('on'); $('#apStart').removeClass('on');
+            send({ cmd: 'pollPause' });
+        }
+    });
+    $('#apEnd').click(function(){
+        stopTimer();
+        clearPollState();
+        clearInterval(_simInterval); _simInterval = null;
+        $('#apEnd').addClass('on'); $('#apStart').removeClass('on'); $('#apPause').removeClass('on'); $('#apSimulate').removeClass('on');
+        send({ cmd: 'pollReveal' });
+    });
+
+    $('#apSimulate').click(function(){
+        if(_simInterval){
+            clearInterval(_simInterval); _simInterval = null;
+            $(this).removeClass('on');
+            return;
+        }
+        _simVotes = [120, 55, 30];
+        $(this).addClass('on');
+        var _simTick = 0;
+        _simInterval = setInterval(function(){
+            _simTick++;
+            var bursts = Math.random() < 0.25 ? 3 : 1;
+            for(var b = 0; b < bursts; b++){
+                var idx = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * _simVotes.length);
+                _simVotes[idx] += Math.floor(Math.random() * 18) + 2;
+            }
+            if(_simTick % 8 === 0){
+                var spike = Math.floor(Math.random() * _simVotes.length);
+                _simVotes[spike] += Math.floor(Math.random() * 40) + 15;
+            }
+            send({ cmd: 'pollTest', event: {
+                id: 'dev-test', eventType: 'PROGRESS', status: 'active',
+                title: 'Welches ist das absolut beste Spiel das du je in deinem ganzen Leben gespielt hast und warum?',
+                startedAt: new Date().toISOString(),
+                endsAt: new Date(_pollEndsAt || Date.now() + 60000).toISOString(),
+                pollChoices: [
+                    { title: 'The Legend of Zelda: Breath of the Wild', totalVotes: _simVotes[0], channelPointVotes: 0 },
+                    { title: 'Elden Ring – Shadow of the Erdtree Edition', totalVotes: _simVotes[1], channelPointVotes: 0 },
+                    { title: 'Red Dead Redemption 2', totalVotes: _simVotes[2], channelPointVotes: 0 },
+                ],
+            }});
+        }, 400);
+    });
+
+    setChickenBtn(true);
+    $('#chickenVisible').click(function(){
+        var on = !$(this).hasClass('on');
+        setChickenBtn(on);
+        send({ cmd: 'chickenVisible', visible: on });
+        saveState();
     });
 
     $('#chickenRot').on('input', function(){
@@ -192,5 +308,25 @@ $(function(){
     });
 
     autoSend();
-    backend = new Backend();
+    backend = new Backend(function(b){
+        b.subscribe('/topic/channelPollReceived', function(event){
+            if(event.eventType === 'START'){
+                savePollState(event, event.endsAt);
+                _pollEndsAt = new Date(event.endsAt).getTime();
+                window.onPollVisible = function(e){ window.onPollVisible = null; startTimer(e); };
+                $('#apStart').addClass('on'); $('#apPause').removeClass('on'); $('#apEnd').removeClass('on');
+                if(typeof applyPollEvent === 'function') applyPollEvent(event);
+            } else if(event.eventType === 'PROGRESS'){
+                savePollState(event, event.endsAt);
+                if(typeof applyPollEvent === 'function') applyPollEvent(event);
+            } else if(event.eventType === 'END'){
+                clearPollState();
+                stopTimer();
+                _pausedAt = null;
+                clearInterval(_simInterval); _simInterval = null;
+                $('#apEnd').addClass('on'); $('#apStart').removeClass('on'); $('#apPause').removeClass('on'); $('#apSimulate').removeClass('on');
+            }
+        });
+    });
+    tryRestorePoll();
 });

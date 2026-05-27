@@ -1,4 +1,6 @@
 let cfg = { panelX:40, panelY:40, panelW:480, panelDelay:2500 };
+let lastPollEvent = null;
+let chickenVisible = localStorage.getItem('chickenVisible') !== 'false';
 
 function buildChickenData(event, type){
     const ch = (event.pollChoices||[]).map(function(c){
@@ -15,10 +17,19 @@ function buildChickenData(event, type){
 
 function applyPollEvent(event){
     if(event.eventType==='START'){
+        lastPollEvent = event;
         const d = buildChickenData(event,'START');
-        if(window.ChickenAnim) window.ChickenAnim.onPollStart();
-        setTimeout(function(){ if(window.PollPanel) window.PollPanel.onPollStart(d); }, cfg.panelDelay);
+        function startPanel(){
+            var pollDuration = (event.endsAt && event.startedAt)
+                ? (new Date(event.endsAt).getTime() - new Date(event.startedAt).getTime())
+                : 120000;
+            var adjustedD = Object.assign({}, d, { endsAt: new Date(Date.now() + pollDuration).toISOString(), displayDuration: pollDuration });
+            if(window.PollPanel) window.PollPanel.onPollStart(adjustedD);
+        }
+        if(!event._restore && window.ChickenAnim && chickenVisible) window.ChickenAnim.onPollStart(startPanel);
+        else startPanel();
     } else if(event.eventType==='PROGRESS'){
+        lastPollEvent = event;
         const d = buildChickenData(event,'PROGRESS');
         if(window.PollPanel) window.PollPanel.updatePollData(d);
     } else if(event.eventType==='END'){
@@ -52,13 +63,16 @@ function onCommandReceived(cmd){
         if(window.ChickenAnim) window.ChickenAnim.onPollStart();
     } else if(cmd.cmd==='pollReveal'){
         if(window.ChickenAnim) window.ChickenAnim.onPollEnd();
-        if(window.PollPanel)   window.PollPanel.onPollEnd({ title:'', choices:[], isEnd:true, isCancelled:false, winnerIdx:-1, endsAt:null });
+        if(window.PollPanel)   window.PollPanel.onPollEnd(lastPollEvent ? buildChickenData(lastPollEvent,'END') : { title:'', choices:[], isEnd:true, isCancelled:false, winnerIdx:-1, endsAt:null });
     } else if(cmd.cmd==='pollHide'){
         if(window.ChickenAnim) window.ChickenAnim.onPollCancel();
         if(window.PollPanel)   window.PollPanel.hide();
+    } else if(cmd.cmd==='chickenVisible'){
+        chickenVisible = !!cmd.visible;
+        localStorage.setItem('chickenVisible', chickenVisible);
+        if(window.ChickenAnim) window.ChickenAnim.setVisible(chickenVisible);
     } else if(cmd.cmd==='chickenCfg'){
         if(cmd.size!==undefined     && window.chickenCfg) window.chickenCfg.size=cmd.size;
-        if(cmd.exitDir              && window.chickenCfg) window.chickenCfg.exitDir=cmd.exitDir;
         if(cmd.entryDir             && window.chickenCfg) window.chickenCfg.entryDir=cmd.entryDir;
         if(cmd.rotation!==undefined            && window.chickenCfg) window.chickenCfg.rotation=cmd.rotation;
         if(cmd.rotationX!==undefined           && window.chickenCfg) window.chickenCfg.rotationX=cmd.rotationX;
@@ -69,4 +83,6 @@ function onCommandReceived(cmd){
 function onBackendConnect(b){
     b.subscribe('/topic/channelPollReceived', applyPollEvent);
     b.subscribe('/topic/object', onCommandReceived);
+    if(window.ChickenAnim) window.ChickenAnim.setVisible(chickenVisible);
+    else setTimeout(function(){ if(window.ChickenAnim) window.ChickenAnim.setVisible(chickenVisible); }, 1500);
 }

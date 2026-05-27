@@ -4,14 +4,14 @@
     var C = {
         x: 80, y: 80, w: 1200,
         hudColor: '#c06020',
-        winnerColor: '#b89020',
+        winnerColor: '#f0c030',
         cancelColor: '#8a1808',
         maxOpts: 5,
         resultRevealMs: 2800,
         lingerMs: 7000,
         appearMs: 1100,
         disappearMs: 700,
-        barEasing: 0.06,
+        barEasing: 0.42,
     };
 
     var IMG_W = 1536, IMG_H = 1024;
@@ -21,12 +21,12 @@
     var pollData = null;
     var animPcts = [], prevVotes = [];
     var wIdx = -1;
-    var freezeAmt = 0, winAmt = 0;
+    var winAmt = 0;
 
-    var panel, scanReveal, timerEl, questionEl, optsEl, freezeOv, frostCvs, frostCtx, resultOv;
+    var panel, scanReveal, timerEl, questionEl, optsEl;
     var optEls = [];
-    var frost = [];
     var timerIv = null, closeTimer = null;
+    var pausedAt = null, pollDuration = null;
 
     function buildDOM(){
         var root = document.getElementById('pollPanelRoot');
@@ -34,6 +34,7 @@
         var el = document.createElement('div');
         el.className = 'pp-panel';
         el.innerHTML = (
+            '<div class="pp-bg"></div>' +
             '<div class="pp-scan-reveal"></div>' +
             '<div class="pp-timer-area">' +
                 '<div class="pp-timer"></div>' +
@@ -41,11 +42,6 @@
             '<div class="pp-content">' +
                 '<div class="pp-question"></div>' +
                 '<div class="pp-options"></div>' +
-            '</div>' +
-            '<div class="pp-result-ov"><div class="pp-result-txt">VOTE CONCLUDED</div></div>' +
-            '<div class="pp-freeze-ov">' +
-                '<canvas class="pp-freeze-cvs"></canvas>' +
-                '<div class="pp-frozen-txt">VOTE HALTED</div>' +
             '</div>' +
             '<div class="pp-frame"></div>'
         );
@@ -56,10 +52,6 @@
         timerEl    = el.querySelector('.pp-timer');
         questionEl = el.querySelector('.pp-question');
         optsEl     = el.querySelector('.pp-options');
-        freezeOv   = el.querySelector('.pp-freeze-ov');
-        frostCvs   = el.querySelector('.pp-freeze-cvs');
-        frostCtx   = frostCvs ? frostCvs.getContext('2d') : null;
-        resultOv   = el.querySelector('.pp-result-ov');
         return true;
     }
 
@@ -97,8 +89,26 @@
         });
     }
 
+    function scaleDynamic(){
+        if(questionEl && pollData){
+            var qlen = (pollData.title || '').length;
+            var qfs = qlen > 100 ? 14 : qlen > 75 ? 16 : qlen > 50 ? 18 : qlen > 30 ? 20 : 22;
+            questionEl.style.fontSize = qfs + 'px';
+        }
+        if(!optEls.length || !pollData) return;
+        var choices = (pollData.choices || []).slice(0, C.maxOpts);
+        var maxLen = choices.reduce(function(m, c){ return Math.max(m, (c.title || '').length); }, 0);
+        var lfs = maxLen > 35 ? 13 : maxLen > 25 ? 14 : maxLen > 18 ? 16 : maxLen > 12 ? 17 : 18;
+        var cfs = maxLen > 35 ? 18 : maxLen > 25 ? 20 : maxLen > 18 ? 22 : 26;
+        optEls.forEach(function(e){
+            var lbl = e.root.querySelector('.pp-opt-label');
+            if(lbl) lbl.style.fontSize = lfs + 'px';
+            e.count.style.fontSize = cfs + 'px';
+        });
+    }
+
     function updateBars(){
-        if(!pollData || !optEls.length) return;
+        if(!pollData || !optEls.length || state === S.FROZEN) return;
         var choices = (pollData.choices || []).slice(0, C.maxOpts);
         var total = choices.reduce(function(s,c){ return s + c.votes; }, 0);
         var isCan = pollData.isCancelled;
@@ -110,7 +120,8 @@
             if(!optEls[i]) return;
             var el = optEls[i];
             var target = total > 0 ? c.votes / total : 0;
-            animPcts[i] = (animPcts[i] || 0) + (target - (animPcts[i] || 0)) * C.barEasing;
+            var diff = target - (animPcts[i] || 0);
+            animPcts[i] = Math.abs(diff) < 0.001 ? target : (animPcts[i] || 0) + diff * C.barEasing;
             el.bar.style.width = (animPcts[i] * 100).toFixed(2) + '%';
             el.count.textContent = c.votes;
 
@@ -143,51 +154,21 @@
     }
 
     function updateTimer(){
-        if(!timerEl || !pollData || state === S.FROZEN) return;
+        if(!timerEl || !pollData || state !== S.ACTIVE) return;
         if(pollData.isEnd || !pollData.endsAt){ timerEl.textContent = ''; return; }
         var rem = Math.max(0, Math.round((new Date(pollData.endsAt) - Date.now()) / 1000));
         var m = Math.floor(rem / 60), s = rem % 60;
         timerEl.textContent = ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
         timerEl.className = 'pp-timer' + (rem < 30 && rem > 0 ? ' pp-urgent' : '');
-    }
-
-    function setupFrost(){
-        if(!frostCvs || !panel) return;
-        var pw = panel.offsetWidth, ph = panel.offsetHeight;
-        if(pw > 0) frostCvs.width  = pw;
-        if(ph > 0) frostCvs.height = ph;
-    }
-
-    function tickFrost(){
-        if(!frostCvs || !frostCtx || freezeAmt < 0.01) return;
-        var w = frostCvs.width, h = frostCvs.height;
-        if(!w || !h){ setupFrost(); return; }
-        if(state === S.FROZEN && freezeAmt > 0.3 && frost.length < 32 && Math.random() < 0.2){
-            frost.push({ x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-.5)*.45, vy:-Math.random()*.7-.1, life:1, r:Math.random()*2.5+1.3 });
+        if(rem === 0){
+            var choices = pollData.choices || [];
+            var total = choices.reduce(function(s,c){ return s+c.votes; }, 0);
+            var wi = total > 0 ? choices.reduce(function(b,c,i){ return c.votes>choices[b].votes?i:b; }, 0) : -1;
+            pollData = Object.assign({}, pollData, { isEnd:true, isCancelled:false, winnerIdx:wi });
+            wIdx = wi;
+            if(window.ChickenAnim) window.ChickenAnim.onPollEnd();
+            go(S.RESOLVED);
         }
-        for(var i = frost.length - 1; i >= 0; i--){
-            var p = frost[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.013;
-            if(p.life <= 0) frost.splice(i, 1);
-        }
-        frostCtx.clearRect(0, 0, w, h);
-        if(freezeAmt > 0.35){
-            frostCtx.strokeStyle = 'rgba(190,110,40,' + (freezeAmt * 0.4) + ')';
-            frostCtx.lineWidth = 1;
-            [[40,16],[108,38],[218,19],[316,33],[w-38,13],[78,66],[w-105,50],[158,8],[w-62,68],[w-180,90]].forEach(function(pt){
-                if(pt[0] > w || pt[1] > h) return;
-                var sz = 5 + (pt[0] % 5);
-                frostCtx.beginPath();
-                frostCtx.moveTo(pt[0]-sz,pt[1]); frostCtx.lineTo(pt[0]+sz,pt[1]);
-                frostCtx.moveTo(pt[0],pt[1]-sz); frostCtx.lineTo(pt[0],pt[1]+sz);
-                frostCtx.moveTo(pt[0]-sz*.7,pt[1]-sz*.7); frostCtx.lineTo(pt[0]+sz*.7,pt[1]+sz*.7);
-                frostCtx.moveTo(pt[0]+sz*.7,pt[1]-sz*.7); frostCtx.lineTo(pt[0]-sz*.7,pt[1]+sz*.7);
-                frostCtx.stroke();
-            });
-        }
-        frost.forEach(function(p){
-            frostCtx.fillStyle = 'rgba(190,110,40,' + (p.life * freezeAmt * 0.7) + ')';
-            frostCtx.beginPath(); frostCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); frostCtx.fill();
-        });
     }
 
     function loop(now){
@@ -217,16 +198,8 @@
             if(prog2 >= 1) go(S.HIDDEN);
         }
 
-        if(state === S.FROZEN) freezeAmt = Math.min(1, freezeAmt + 0.015);
-        else                   freezeAmt = Math.max(0, freezeAmt - 0.013);
-        if(freezeOv) freezeOv.style.opacity = freezeAmt.toFixed(3);
-        if(freezeAmt > 0.01) tickFrost();
-
         if(state === S.RESOLVED){
             winAmt = Math.min(1, el / C.resultRevealMs);
-            if(resultOv && winAmt > 0.55){
-                resultOv.style.opacity = Math.min(1, (winAmt - 0.55) / 0.3).toFixed(3);
-            }
         }
 
         updateBars();
@@ -240,7 +213,7 @@
         if(s === S.HIDDEN){
             panel.style.display = 'none';
             clearInterval(timerIv);
-            frost = [];
+            pausedAt = null; pollDuration = null;
 
         } else if(s === S.APPEARING){
             panel.style.display   = 'block';
@@ -248,36 +221,50 @@
             panel.style.clipPath  = 'inset(0 0 100% 0)';
             panel.style.filter    = '';
             panel.style.transform = '';
-            freezeAmt = 0; winAmt = 0;
-            if(freezeOv) freezeOv.style.opacity = '0';
-            if(resultOv) resultOv.style.opacity  = '0';
+            winAmt = 0;
             if(questionEl) questionEl.textContent = (pollData && pollData.title) || '';
             buildOpts();
+            scaleDynamic();
             posPanel();
-            setupFrost();
-            clearInterval(timerIv);
-            timerIv = setInterval(updateTimer, 500);
-
         } else if(s === S.ACTIVE){
             panel.style.clipPath = '';
             panel.style.opacity  = '1';
             if(scanReveal) scanReveal.style.opacity = '0';
+            if(pollData && pollData.endsAt){
+                if(pausedAt !== null){
+                    var pauseDur = Date.now() - pausedAt;
+                    pollData.endsAt = new Date(new Date(pollData.endsAt).getTime() + pauseDur).toISOString();
+                } else if(pollDuration !== null){
+                    pollData.endsAt = new Date(Date.now() + pollDuration).toISOString();
+                }
+            }
+            pausedAt = null;
+            clearInterval(timerIv);
+            timerIv = setInterval(updateTimer, 500);
+            updateTimer();
+            if(window.onPollVisible && pollData && pollData.endsAt){
+                var cb = window.onPollVisible; window.onPollVisible = null;
+                cb(new Date(pollData.endsAt).getTime());
+            }
+
+        } else if(s === S.FROZEN){
+            clearInterval(timerIv);
+            pausedAt = Date.now();
 
         } else if(s === S.RESOLVED){
             winAmt = 0;
             clearInterval(timerIv);
+            pausedAt = null;
             if(timerEl) timerEl.textContent = '';
-            var isCan = pollData && pollData.isCancelled;
-            if(resultOv){
-                resultOv.style.opacity = '0';
-                var rtxt = resultOv.querySelector('.pp-result-txt');
-                if(rtxt){
-                    rtxt.textContent = isCan ? 'VOTE ANNULLED' : 'VOTE CONCLUDED';
-                    rtxt.style.color = isCan ? C.cancelColor : C.winnerColor;
-                }
-            }
             var linger = (C.resultRevealMs || 2800) + (C.lingerMs || 7000);
-            closeTimer = setTimeout(function(){ if(state === S.RESOLVED) go(S.DISAPPEARING); }, linger);
+            closeTimer = setTimeout(function(){
+                if(state !== S.RESOLVED) return;
+                if(window.ChickenAnim){
+                    window.ChickenAnim.onPanelDisappear(function(){ go(S.DISAPPEARING); });
+                } else {
+                    go(S.DISAPPEARING);
+                }
+            }, linger);
 
         } else if(s === S.DISAPPEARING){
             clearInterval(timerIv);
@@ -287,7 +274,7 @@
     function setup(){
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'pollPanel.css?v=6';
+        link.href = 'pollPanel.css?v=37';
         document.head.appendChild(link);
         if(!buildDOM()) return;
         panel.style.setProperty('--pp-hud',    C.hudColor);
@@ -300,9 +287,15 @@
     window.PollPanel = {
         onPollStart: function(d){
             pollData = d; wIdx = -1; animPcts = []; prevVotes = [];
+            pollDuration = d.displayDuration || null;
+            pausedAt = null;
             go(S.APPEARING);
         },
-        updatePollData: function(d){ pollData = d; },
+        updatePollData: function(d){
+            var savedEndsAt = pollData ? pollData.endsAt : null;
+            pollData = d;
+            if(savedEndsAt) pollData.endsAt = savedEndsAt;
+        },
         onPollPause: function(){
             if(state === S.ACTIVE || state === S.APPEARING) go(S.FROZEN);
         },
@@ -310,11 +303,13 @@
             if(state === S.FROZEN) go(S.ACTIVE);
         },
         onPollEnd: function(d){
+            if(state === S.RESOLVED || state === S.DISAPPEARING || state === S.HIDDEN) return;
             pollData = d;
             wIdx = (d && d.winnerIdx !== undefined) ? d.winnerIdx : -1;
             go(S.RESOLVED);
         },
         onPollCancel: function(d){
+            if(state === S.RESOLVED || state === S.DISAPPEARING || state === S.HIDDEN) return;
             pollData = d; wIdx = -1;
             go(S.RESOLVED);
         },
