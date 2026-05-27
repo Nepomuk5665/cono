@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Overlay</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <div id="predictionPanelRoot"
+         style="position:fixed;top:0;left:0;width:1920px;height:1080px;pointer-events:none;overflow:hidden;z-index:2;"></div>
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="/utils/Backend.js"></script>
+    <script src="predictionPanel.js"></script>
+    <script src="prediction.js"></script>
+</body>
+</html>

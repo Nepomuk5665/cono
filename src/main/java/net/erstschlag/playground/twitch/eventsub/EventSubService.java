@@ -75,13 +75,12 @@ public class EventSubService {
         );
         twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelSubscriptionMessageEvent.class, event -> subscriptionReceived(publishApplicationEvent(eventConvertor.convert(event))));
         
-        /*
         twitchClient.getEventSocket().register(
                 SubscriptionTypes.CHANNEL_SUBSCRIBE.prepareSubscription(
                         builder -> builder.broadcasterUserId(eventSubConfiguration.getChannelId()).build(),
                         null
                 )
-        );*/
+        );
         twitchClient.getEventManager().onEvent(com.github.twitch4j.eventsub.events.ChannelSubscribeEvent.class, event -> subscriptionReceived(publishApplicationEvent(eventConvertor.convert(event))));
         
         twitchClient.getEventSocket().register(
