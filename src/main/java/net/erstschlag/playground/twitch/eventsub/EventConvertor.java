@@ -90,10 +90,10 @@ public class EventConvertor {
         return convert(ChannelPredictionEvent.TYPE.PROGRESS, cPPE, Optional.of(cPPE.getLocksAt()), Optional.empty(), Optional.empty());
     }
     public ChannelPredictionEvent convert(com.github.twitch4j.eventsub.events.ChannelPredictionLockEvent cPLE) {
-        return convert(ChannelPredictionEvent.TYPE.LOCKED, cPLE, Optional.of(cPLE.getLockedAt()), Optional.empty(), Optional.empty());
+        return convert(ChannelPredictionEvent.TYPE.LOCKED, cPLE, Optional.ofNullable(cPLE.getLockedAt()), Optional.empty(), Optional.empty());
     }
     public ChannelPredictionEvent convert(com.github.twitch4j.eventsub.events.ChannelPredictionEndEvent cPEE) {
-        return convert(ChannelPredictionEvent.TYPE.END, cPEE, Optional.empty(), Optional.of(cPEE.getEndedAt()), Optional.of(cPEE.getWinningOutcomeId()));
+        return convert(ChannelPredictionEvent.TYPE.END, cPEE, Optional.empty(), Optional.ofNullable(cPEE.getEndedAt()), Optional.ofNullable(cPEE.getWinningOutcomeId()));
     }
 
     private ChannelPredictionEvent convert(ChannelPredictionEvent.TYPE type,
