@@ -7,23 +7,21 @@
         rotation: -94,
         rotationX: 35,
         celebrationSequence: [4],
-        celebrationMode: 'sequence',
-        introEnabled: true,
     };
 
     const AI = {
-        walk:0, salto:1, lookUp:2, bow:3,
-        dance1:4, wave:5, walkUp:6, dance2:7,
+        walk:0, lookUp:2, bow:3,
+        dance1:4, dance2:7,
         freeze1:9,
     };
 
     const S = {
-        HIDDEN:0, APPEARING:1, GREETING:2,
-        PANEL_REVEAL:4, ACTIVE:5, FROZEN:6, THAWING:7,
+        HIDDEN:0, APPEARING:1,
+        ACTIVE:5, FROZEN:6, THAWING:7,
         CELEBRATING:9, EXITING:10
     };
 
-    let state = S.HIDDEN, stateTs = 0, cancelMode = false, exitWithBow = false, exitCb = null;
+    let state = S.HIDDEN, stateTs = 0, exitWithBow = false, exitCb = null;
     let renderer, scene, camera, mixer, model, clock;
     let ambientLight, blueLight, goldLight;
     let actions = [], currentAction = null, loaded = false;
@@ -178,17 +176,6 @@
             model.rotation.y = fromRight ? Math.PI : 0;
             if(t >= 1) go(S.ACTIVE);
 
-        } else if(state === S.GREETING){
-            model.position.set(rx, ry, 0);
-            const turnT = Math.min(el / 500, 1);
-            model.rotation.y = rot * turnT;
-            model.rotation.x = rotX * turnT;
-
-        } else if(state === S.PANEL_REVEAL){
-            model.position.set(rx, ry, 0);
-            model.rotation.y = rot; model.rotation.x = rotX;
-            if(el >= 1000) go(S.ACTIVE);
-
         } else if(state === S.ACTIVE || state === S.FROZEN || state === S.THAWING || state === S.CELEBRATING){
             model.position.set(rx, ry, 0);
             model.rotation.y = rot; model.rotation.x = rotX;
@@ -222,7 +209,7 @@
         }
         ambientLight.color.setRGB(1 - 0.4 * freezeAmt, 1 - 0.2 * freezeAmt, 1);
         blueLight.intensity = 3 * freezeAmt;
-        const celebrating = state === S.CELEBRATING && !cancelMode;
+        const celebrating = state === S.CELEBRATING;
         goldLight.intensity += ((celebrating ? 2.5 : 0) - goldLight.intensity) * 0.04;
     }
 
@@ -247,17 +234,6 @@
                 currentAction.reset().fadeIn(0.1).play();
             }
 
-        } else if(s === S.GREETING){
-            if(window.chickenCfg.introEnabled !== false){
-                playAnim(AI.wave, false);
-                seqTimer = setTimeout(function(){ go(S.PANEL_REVEAL); }, Math.min(dur(AI.wave) - 200, 1800));
-            } else {
-                go(S.PANEL_REVEAL);
-            }
-
-        } else if(s === S.PANEL_REVEAL){
-            playAnim(AI.lookUp);
-
         } else if(s === S.ACTIVE){
             playAnim(AI.lookUp);
             if(onEnteredCb){ var cb = onEnteredCb; onEnteredCb = null; cb(); }
@@ -269,19 +245,8 @@
             playAnim(AI.walk);
 
         } else if(s === S.CELEBRATING){
-            if(cancelMode){
-                playSeq([AI.walkUp, AI.salto], false, function(){ go(S.EXITING); });
-            } else {
-                var seq;
-                const cfg = window.chickenCfg;
-                if(cfg.celebrationMode === 'random'){
-                    const pool = [AI.dance1, AI.dance2, AI.bow];
-                    seq = [pool[Math.floor(Math.random()*pool.length)], pool[Math.floor(Math.random()*pool.length)]];
-                } else {
-                    seq = cfg.celebrationSequence || [AI.dance1, AI.dance2, AI.bow];
-                }
-                playSeq(seq, false, function(){ go(S.ACTIVE); });
-            }
+            var seq = window.chickenCfg.celebrationSequence || [AI.dance1, AI.dance2, AI.bow];
+            playSeq(seq, false, function(){ go(S.ACTIVE); });
 
         } else if(s === S.EXITING){
             if(exitWithBow){
@@ -294,10 +259,10 @@
     }
 
     window.ChickenAnim = {
-        onPollStart:    function(cb){ cancelMode = false; onEnteredCb = cb || null; go(S.APPEARING); },
+        onPollStart:    function(cb){ onEnteredCb = cb || null; go(S.APPEARING); },
         onPollPause:    function(){ if(state !== S.HIDDEN && state !== S.FROZEN) go(S.FROZEN); },
         onPollResume:   function(){ if(state === S.FROZEN) go(S.THAWING); },
-        onPollEnd:      function(){ if(state === S.CELEBRATING || state === S.EXITING || state === S.HIDDEN) return; cancelMode = false; go(S.CELEBRATING); },
+        onPollEnd:      function(){ if(state === S.CELEBRATING || state === S.EXITING || state === S.HIDDEN) return; go(S.CELEBRATING); },
         onPollCancel:   function(){ exitWithBow = false; go(S.EXITING); },
         setCfg: function(px, py, pw){
             panelX = px !== undefined ? px : 40;

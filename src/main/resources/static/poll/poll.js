@@ -1,4 +1,4 @@
-let cfg = { panelX:40, panelY:40, panelW:480, panelDelay:2500 };
+let cfg = { panelX:40, panelY:40, panelW:480 };
 let lastPollEvent = null;
 let chickenVisible = localStorage.getItem('chickenVisible') !== 'false';
 
@@ -59,8 +59,6 @@ function onCommandReceived(cmd){
     } else if(cmd.cmd==='pollResume'){
         if(window.ChickenAnim) window.ChickenAnim.onPollResume();
         if(window.PollPanel)   window.PollPanel.onPollResume();
-    } else if(cmd.cmd==='pollShow'){
-        if(window.ChickenAnim) window.ChickenAnim.onPollStart();
     } else if(cmd.cmd==='pollReveal'){
         if(window.ChickenAnim) window.ChickenAnim.onPollEnd();
         if(window.PollPanel)   window.PollPanel.onPollEnd(lastPollEvent ? buildChickenData(lastPollEvent,'END') : { title:'', choices:[], isEnd:true, isCancelled:false, winnerIdx:-1, endsAt:null });
@@ -72,7 +70,6 @@ function onCommandReceived(cmd){
         localStorage.setItem('chickenVisible', chickenVisible);
         if(window.ChickenAnim) window.ChickenAnim.setVisible(chickenVisible);
     } else if(cmd.cmd==='chickenCfg'){
-        if(cmd.size!==undefined     && window.chickenCfg) window.chickenCfg.size=cmd.size;
         if(cmd.entryDir             && window.chickenCfg) window.chickenCfg.entryDir=cmd.entryDir;
         if(cmd.rotation!==undefined            && window.chickenCfg) window.chickenCfg.rotation=cmd.rotation;
         if(cmd.rotationX!==undefined           && window.chickenCfg) window.chickenCfg.rotationX=cmd.rotationX;

@@ -1,5 +1,4 @@
 let backend = null;
-let selectedPos = 'top-left';
 let debounceTimer = null;
 let _previewScale = 1;
 let _pollEndsAt = null;
@@ -48,7 +47,7 @@ window._updateDragHandles = function(scale) {
 
 
 function buildConfig(){
-    return { cmd: 'pollConfig', panelW: parseInt($('#panelW').val()), panelPosition: selectedPos, panelX: parseInt($('#panelX').val()), panelY: parseInt($('#panelY').val()) };
+    return { cmd: 'pollConfig', panelW: parseInt($('#panelW').val()), panelX: parseInt($('#panelX').val()), panelY: parseInt($('#panelY').val()) };
 }
 
 function saveState(){
@@ -223,13 +222,13 @@ $(function(){
         window.onPollVisible = function(e){ window.onPollVisible = null; startTimer(e); };
         var startEvent = {
             id: 'dev-test', eventType: 'START', status: 'active',
-            title: 'Welches ist das absolut beste Spiel das du je in deinem ganzen Leben gespielt hast und warum?',
+            title: 'What should we do next in EVE?',
             startedAt: new Date(now).toISOString(),
             endsAt: new Date(endsAt).toISOString(),
             pollChoices: [
-                { title: 'The Legend of Zelda: Breath of the Wild', totalVotes: 120, channelPointVotes: 0 },
-                { title: 'Elden Ring – Shadow of the Erdtree Edition', totalVotes:  55, channelPointVotes: 0 },
-                { title: 'Red Dead Redemption 2', totalVotes:  30, channelPointVotes: 0 },
+                { title: 'PvP Roam', totalVotes: 120, channelPointVotes: 0 },
+                { title: 'Ratting and ISK farming', totalVotes:  55, channelPointVotes: 0 },
+                { title: 'Wormhole Exploration', totalVotes:  30, channelPointVotes: 0 },
             ],
         };
         savePollState(startEvent, endsAt);
@@ -278,13 +277,13 @@ $(function(){
             }
             send({ cmd: 'pollTest', event: {
                 id: 'dev-test', eventType: 'PROGRESS', status: 'active',
-                title: 'Welches ist das absolut beste Spiel das du je in deinem ganzen Leben gespielt hast und warum?',
+                title: 'What should we do next in EVE?',
                 startedAt: new Date().toISOString(),
                 endsAt: new Date(_pollEndsAt || Date.now() + 60000).toISOString(),
                 pollChoices: [
-                    { title: 'The Legend of Zelda: Breath of the Wild', totalVotes: _simVotes[0], channelPointVotes: 0 },
-                    { title: 'Elden Ring – Shadow of the Erdtree Edition', totalVotes: _simVotes[1], channelPointVotes: 0 },
-                    { title: 'Red Dead Redemption 2', totalVotes: _simVotes[2], channelPointVotes: 0 },
+                    { title: 'PvP Roam', totalVotes: _simVotes[0], channelPointVotes: 0 },
+                    { title: 'Ratting and ISK farming', totalVotes: _simVotes[1], channelPointVotes: 0 },
+                    { title: 'Wormhole Exploration', totalVotes: _simVotes[2], channelPointVotes: 0 },
                 ],
             }});
         }, 400);

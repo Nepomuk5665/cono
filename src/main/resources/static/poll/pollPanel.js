@@ -256,7 +256,7 @@
             clearInterval(timerIv);
             pausedAt = null;
             if(timerEl) timerEl.textContent = '';
-            var linger = (C.resultRevealMs || 2800) + (C.lingerMs || 7000);
+            var linger = C.resultRevealMs + C.lingerMs;
             closeTimer = setTimeout(function(){
                 if(state !== S.RESOLVED) return;
                 if(window.ChickenAnim){
@@ -274,7 +274,7 @@
     function setup(){
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'pollPanel.css?v=37';
+        link.href = 'pollPanel.css';
         document.head.appendChild(link);
         if(!buildDOM()) return;
         panel.style.setProperty('--pp-hud',    C.hudColor);
@@ -318,12 +318,6 @@
             if(y !== undefined) C.y = y;
             if(w !== undefined) C.w = w;
             posPanel();
-        },
-        configure: function(opts){
-            if(opts.maxOpts        !== undefined) C.maxOpts        = opts.maxOpts;
-            if(opts.barEasing      !== undefined) C.barEasing      = opts.barEasing;
-            if(opts.resultRevealMs !== undefined) C.resultRevealMs = opts.resultRevealMs;
-            if(opts.lingerMs       !== undefined) C.lingerMs       = opts.lingerMs;
         },
         hide: function(){ go(S.DISAPPEARING); },
     };
