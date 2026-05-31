@@ -20,16 +20,14 @@ import net.erstschlag.playground.twitch.eventsub.events.RaffleEvent;
 @Service
 public class KickConnectorService {
 
-    private static final String PUSHER_KEY = "32cbd69e4b950bf97679";
-    private static final String PUSHER_CLUSTER = "us2";
-    private static final long KICK_CHATROOM_ID = 63321745l;
-
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final KickConfiguration kickConfiguration;
 
     private Pusher kickPusher;
 
-    public KickConnectorService(ApplicationEventPublisher applicationEventPublisher) {
+    public KickConnectorService(ApplicationEventPublisher applicationEventPublisher, KickConfiguration kickConfiguration) {
        this.applicationEventPublisher = applicationEventPublisher;
+       this.kickConfiguration = kickConfiguration;
     }
 
     @PostConstruct
@@ -39,13 +37,14 @@ public class KickConnectorService {
 
     private void initialize() {
         shutdownKickPusher();
-        PusherOptions options = new PusherOptions().setCluster(PUSHER_CLUSTER);
-        kickPusher = new Pusher(PUSHER_KEY, options);
+        PusherOptions options = new PusherOptions().setCluster(kickConfiguration.getPusherCluster());
+        kickPusher = new Pusher(kickConfiguration.getPusherKey(), options);
         kickPusher.connect();
-        Channel channel = kickPusher.subscribe("chatrooms." + KICK_CHATROOM_ID + ".v2");
+        Channel channel = kickPusher.subscribe("chatrooms." + kickConfiguration.getChannelId() + ".v2");
         channel.bind("App\\Events\\ChatMessageEvent", (PusherEvent event) -> {
             handleChatMessageEvent(KickEventConvertor.parseChannelMessageEvent(event.getData()));
         });
+
     }
 
     private void handleChatMessageEvent(ChannelMessageEvent event) {
