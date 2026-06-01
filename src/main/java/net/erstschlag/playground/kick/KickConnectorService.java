@@ -1,0 +1,93 @@
+package net.erstschlag.playground.kick;
+
+import java.util.Optional;
+import java.util.StringTokenizer;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+
+import com.pusher.client.Pusher;
+import com.pusher.client.PusherOptions;
+import com.pusher.client.channel.Channel;
+import com.pusher.client.channel.PusherEvent;
+
+import jakarta.annotation.PostConstruct;
+import net.erstschlag.playground.PlaygroundEvent;
+import net.erstschlag.playground.twitch.eventsub.events.ChannelMessageEvent;
+import net.erstschlag.playground.twitch.eventsub.events.ChatMessageEvent;
+import net.erstschlag.playground.twitch.eventsub.events.RaffleEvent;
+
+@Service
+public class KickConnectorService {
+
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final KickConfiguration kickConfiguration;
+
+    private Pusher kickPusher;
+
+    public KickConnectorService(ApplicationEventPublisher applicationEventPublisher, KickConfiguration kickConfiguration) {
+       this.applicationEventPublisher = applicationEventPublisher;
+       this.kickConfiguration = kickConfiguration;
+    }
+
+    @PostConstruct
+    public void init() {
+        initialize();
+    }
+
+    private void initialize() {
+        shutdownKickPusher();
+        PusherOptions options = new PusherOptions().setCluster(kickConfiguration.getPusherCluster());
+        kickPusher = new Pusher(kickConfiguration.getPusherKey(), options);
+        kickPusher.connect();
+        Channel channel = kickPusher.subscribe("chatrooms." + kickConfiguration.getChannelId() + ".v2");
+        channel.bind("App\\Events\\ChatMessageEvent", (PusherEvent event) -> {
+            handleChatMessageEvent(KickEventConvertor.parseChannelMessageEvent(event.getData()));
+        });
+
+    }
+
+    private void handleChatMessageEvent(ChannelMessageEvent event) {
+        String eventMessage = event.getMessage();
+        if (eventMessage != null) {
+            if (eventMessage.startsWith("!raffle")) {
+                handleRaffleChatMessage(event);
+                return;
+            }
+            handleChatMessage(event, eventMessage);
+        }
+    }
+
+    private void handleRaffleChatMessage(ChannelMessageEvent event) {
+        Optional<String> raffleArg1 = Optional.empty();
+        StringTokenizer strTok = new StringTokenizer(event.getMessage(), " ");
+        if (strTok.countTokens() >= 2) {
+            strTok.nextToken();
+            raffleArg1 = Optional.of(strTok.nextToken());
+        }
+        publishApplicationEvent(new RaffleEvent(event.getUser(), raffleArg1));
+    }
+
+    private void handleChatMessage(ChannelMessageEvent event, String message) {
+        publishApplicationEvent(new ChatMessageEvent(event.getUser(), message));
+    }
+
+    private <T extends PlaygroundEvent> T publishApplicationEvent(T playgroundEvent) {
+        applicationEventPublisher.publishEvent(playgroundEvent);
+        System.out.println(playgroundEvent.toString());
+        return playgroundEvent;
+    }
+
+    private void shutdownKickPusher() {
+        if (kickPusher != null) {
+            try {
+                kickPusher.disconnect();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                kickPusher = null;
+            }
+        }
+    }
+
+}
