@@ -108,6 +108,8 @@
         var outcomes = data ? (data.outcomes || []).slice(0, C.maxOutcomes) : [];
         var n = outcomes.length;
 
+        var topCount = Math.floor(n / 2);
+
         if (n === 2) {
             slotUpper.classList.add('pr-slot--solo');
             slotLower.classList.add('pr-slot--solo');
@@ -116,9 +118,11 @@
         } else if (n > 0) {
             slotUpper.classList.remove('pr-slot--solo');
             slotLower.classList.remove('pr-slot--solo');
-            buildOneOutcome(outcomes[0], 0, slotUpper, 'pr-neutral', true);
-            for (var i = 1; i < n; i++) {
-                buildOneOutcome(outcomes[i], i, slotLower, 'pr-neutral', false);
+            for (var i = 0; i < topCount; i++) {
+                buildOneOutcome(outcomes[i], i, slotUpper, 'pr-neutral', false);
+            }
+            for (var j = topCount; j < n; j++) {
+                buildOneOutcome(outcomes[j], j, slotLower, 'pr-neutral', false);
             }
         }
     }
